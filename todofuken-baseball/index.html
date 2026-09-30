@@ -1,0 +1,617 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>都道府県ベースボール</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Maru+Gothic:wght@500;700;900&display=swap">
+<style>
+/* Layout: one narrow column styled like a hand-operated ballpark scoreboard; question card = the pitch, answers = swings */
+:root {
+  --board: #173b2c;
+  --board-deep: #0f2a1f;
+  --board-cell: #0b2118;
+  --chalk: #f4f1e3;
+  --chalk-dim: #b9c4b5;
+  --lamp: #ffd23f;
+  --stitch: #e4493e;
+  --line: rgba(244, 241, 227, 0.16);
+  --dirt: #c98b55;
+  --f-display: "Dela Gothic One", "Hiragino Kaku Gothic StdN", "Yu Gothic", sans-serif;
+  --f-body: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--board-deep);
+  color: var(--chalk);
+  font-family: var(--f-body);
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 1.6;
+  padding-inline: 16px;
+  padding-block: 20px 40px;
+}
+.wrap { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+
+header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+h1 {
+  font-family: var(--f-display);
+  font-weight: 400;
+  font-size: clamp(22px, 6vw, 30px);
+  line-height: 1.2;
+  margin: 0;
+  letter-spacing: 0.02em;
+  text-wrap: balance;
+}
+h1 small { display: block; font-family: var(--f-body); font-size: 13px; font-weight: 700; color: var(--chalk-dim); letter-spacing: 0.08em; }
+.tabs { display: flex; gap: 6px; }
+.tab {
+  font: inherit; font-weight: 700; font-size: 14px;
+  background: transparent; color: var(--chalk-dim);
+  border: 2px solid var(--line); border-radius: 999px;
+  padding: 6px 14px; cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--chalk); color: var(--board-deep); border-color: var(--chalk); }
+
+button:focus-visible { outline: 3px solid var(--lamp); outline-offset: 2px; }
+
+/* scoreboard */
+.board {
+  background: var(--board);
+  border: 3px solid var(--chalk);
+  border-radius: 6px;
+  padding: 12px;
+  box-shadow: 0 6px 0 rgba(0,0,0,.35);
+}
+.board-scroll { overflow-x: auto; }
+.board table { border-collapse: separate; border-spacing: 4px; width: 100%; min-width: 360px; }
+.board th {
+  font-family: var(--f-display); font-weight: 400; font-size: 13px; color: var(--chalk-dim);
+  text-align: center; padding: 0;
+}
+.board td {
+  background: var(--board-cell);
+  font-family: var(--f-display);
+  font-size: 22px;
+  text-align: center;
+  height: 42px;
+  width: 9%;
+  color: var(--chalk);
+  border-radius: 3px;
+  font-variant-numeric: tabular-nums;
+}
+.board td.name { width: auto; font-size: 14px; text-align: left; padding-inline: 8px; background: transparent; white-space: nowrap; }
+.board td.now { box-shadow: inset 0 0 0 2px var(--lamp); }
+.board td.hit { color: var(--lamp); }
+.board td.out { color: var(--chalk-dim); }
+.board td.total { background: var(--chalk); color: var(--board-deep); width: 12%; }
+.board-meta { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 13px; color: var(--chalk-dim); gap: 10px; flex-wrap: wrap; }
+.lamps { display: flex; gap: 14px; }
+.lamps span { display: inline-flex; align-items: center; gap: 5px; font-family: var(--f-display); }
+.lamp { width: 12px; height: 12px; border-radius: 50%; background: var(--board-cell); border: 1px solid var(--line); display: inline-block; }
+.lamp.on { background: var(--lamp); border-color: var(--lamp); box-shadow: 0 0 8px var(--lamp); }
+
+/* mode select */
+.intro { font-size: 15px; color: var(--chalk-dim); margin: 0; }
+.modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+.mode {
+  font: inherit; text-align: left; cursor: pointer;
+  background: var(--chalk); color: var(--board-deep);
+  border: none; border-radius: 10px;
+  padding: 14px 16px;
+  display: flex; flex-direction: column; gap: 2px;
+  box-shadow: 0 4px 0 var(--dirt);
+  transition: transform .1s;
+}
+.mode:hover { transform: translateY(-2px); }
+.mode:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--dirt); }
+.mode b { font-family: var(--f-display); font-weight: 400; font-size: 19px; }
+.mode span { font-size: 13px; font-weight: 700; opacity: .75; }
+
+/* pitch card */
+.pitch {
+  background: var(--chalk);
+  color: var(--board-deep);
+  border-radius: 12px;
+  padding: 18px 18px 16px;
+  position: relative;
+  overflow: hidden;
+}
+.pitch::before, .pitch::after {
+  content: ""; position: absolute; width: 140px; height: 140px; border-radius: 50%;
+  border: 2px dashed var(--stitch); opacity: .35; pointer-events: none;
+}
+.pitch::before { right: -100px; top: -40px; }
+.pitch::after { left: -110px; bottom: -70px; }
+.pitch .inning { font-size: 13px; font-weight: 900; letter-spacing: .1em; color: var(--stitch); }
+.pitch .kind { display: inline-block; font-size: 12px; font-weight: 900; background: var(--board); color: var(--chalk); border-radius: 4px; padding: 1px 8px; margin-left: 8px; letter-spacing: .05em; }
+.pitch .subject { font-family: var(--f-display); font-weight: 400; font-size: clamp(24px, 7vw, 34px); line-height: 1.25; margin: 8px 0 0; text-wrap: balance; }
+.pitch .reading { font-size: 14px; font-weight: 700; opacity: .7; }
+.pitch .ask { font-size: 17px; font-weight: 900; margin: 8px 0 0; }
+.hint-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+.hint-btn { font: inherit; font-size: 13px; font-weight: 700; background: transparent; border: 2px solid var(--board); color: var(--board); border-radius: 999px; padding: 2px 12px; cursor: pointer; }
+.hint { font-size: 14px; font-weight: 900; color: var(--board); }
+
+.choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.choice {
+  font: inherit; cursor: pointer;
+  background: var(--board); color: var(--chalk);
+  border: 2px solid var(--line); border-radius: 10px;
+  padding: 12px 8px; min-height: 76px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0;
+}
+.choice:hover:not(:disabled) { border-color: var(--chalk); }
+.choice b { font-family: var(--f-display); font-weight: 400; font-size: 22px; line-height: 1.3; }
+.choice span { font-size: 12px; font-weight: 700; color: var(--chalk-dim); }
+.choice:disabled { cursor: default; opacity: .45; }
+.choice.right { opacity: 1; background: var(--lamp); color: var(--board-deep); border-color: var(--lamp); }
+.choice.right span { color: var(--board-deep); }
+.choice.wrong { opacity: 1; border-color: var(--stitch); background: #3a2420; }
+
+.call {
+  border-radius: 12px; padding: 14px 16px;
+  border: 2px solid var(--line);
+  display: flex; flex-direction: column; gap: 6px;
+}
+.call.hit { border-color: var(--lamp); }
+.call h2 { font-family: var(--f-display); font-weight: 400; font-size: 26px; margin: 0; line-height: 1.2; }
+.call.hit h2 { color: var(--lamp); }
+.call p { margin: 0; font-size: 15px; }
+.call .fact { color: var(--chalk-dim); font-size: 14px; }
+.rare { display: inline-block; font-size: 11px; font-weight: 900; background: var(--stitch); color: var(--chalk); border-radius: 4px; padding: 0 7px; margin-right: 6px; letter-spacing: .05em; }
+.pitch .kind.team { background: var(--stitch); }
+.next {
+  font: inherit; font-family: var(--f-display); font-size: 18px; cursor: pointer;
+  background: var(--chalk); color: var(--board-deep); border: none; border-radius: 10px;
+  padding: 12px; margin-top: 6px; box-shadow: 0 4px 0 var(--dirt);
+}
+.next:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--dirt); }
+
+.result { text-align: center; display: flex; flex-direction: column; gap: 10px; align-items: center; padding-block: 8px; }
+.result .big { font-family: var(--f-display); font-size: clamp(56px, 18vw, 88px); line-height: 1; color: var(--lamp); }
+.result h2 { font-family: var(--f-display); font-weight: 400; font-size: 24px; margin: 0; }
+.result p { margin: 0; color: var(--chalk-dim); max-width: 32em; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.ghost { font: inherit; font-weight: 700; background: transparent; color: var(--chalk); border: 2px solid var(--line); border-radius: 10px; padding: 10px 16px; cursor: pointer; }
+
+/* stamp book */
+.book-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.book-head h2 { font-family: var(--f-display); font-weight: 400; font-size: 22px; margin: 0; }
+.book-head .count { font-family: var(--f-display); color: var(--lamp); font-size: 20px; font-variant-numeric: tabular-nums; }
+.region { display: flex; flex-direction: column; gap: 6px; }
+.region h3 { margin: 0; font-size: 13px; font-weight: 900; letter-spacing: .12em; color: var(--chalk-dim); }
+.cells { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; }
+.cell {
+  background: var(--board); border: 1px solid var(--line); border-radius: 8px;
+  padding: 8px 4px; text-align: center; position: relative; min-height: 58px;
+  display: flex; flex-direction: column; justify-content: center;
+}
+.cell b { font-size: 15px; font-weight: 900; line-height: 1.3; }
+.cell span { font-size: 10px; color: var(--chalk-dim); }
+.cell.got { background: var(--chalk); color: var(--board-deep); border-color: var(--chalk); }
+.cell.got span { color: var(--board-deep); opacity: .6; }
+.cell.got::after {
+  content: ""; position: absolute; top: -6px; right: -4px; width: 22px; height: 22px; border-radius: 50%;
+  background:
+    radial-gradient(circle at 0 50%, transparent 8px, var(--stitch) 8px, var(--stitch) 9px, transparent 9px),
+    radial-gradient(circle at 100% 50%, transparent 8px, var(--stitch) 8px, var(--stitch) 9px, transparent 9px),
+    #fff;
+  border: 1px solid #d8d3c0;
+  transform: rotate(-20deg);
+}
+.reset { align-self: flex-start; font-size: 13px; padding: 6px 12px; }
+.confirm { font-size: 14px; color: var(--chalk-dim); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+@media (max-width: 380px) { .choice b { font-size: 19px; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+@keyframes pop { from { transform: scale(.9); opacity: .4; } to { transform: scale(1); opacity: 1; } }
+.call, .result { animation: pop .18s ease-out; }
+</style>
+<style>*,*::before,*::after{box-sizing:border-box}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header>
+    <h1><small>やきゅうで おぼえる</small>都道府県ベースボール</h1>
+    <div class="tabs" role="tablist">
+      <button class="tab" id="tab-play" role="tab" aria-selected="true">あそぶ</button>
+      <button class="tab" id="tab-book" role="tab" aria-selected="false">スタンプ帳</button>
+    </div>
+  </header>
+
+  <section id="view-play" class="wrap" style="gap:18px">
+    <div class="board">
+      <div class="board-scroll">
+        <table>
+          <thead><tr id="board-head"></tr></thead>
+          <tbody><tr id="board-row"></tr></tbody>
+        </table>
+      </div>
+      <div class="board-meta">
+        <div class="lamps">
+          <span>H <i class="lamp" id="lamp-h"></i></span>
+          <span>OUT <i class="lamp" id="lamp-o1"></i><i class="lamp" id="lamp-o2"></i><i class="lamp" id="lamp-o3"></i></span>
+        </div>
+        <div id="board-note">1問せいかいで 1点。9回まで たたかおう！</div>
+      </div>
+    </div>
+    <div id="stage"></div>
+  </section>
+
+  <section id="view-book" class="wrap" style="gap:14px" hidden></section>
+</div>
+
+<script>
+const PREFS = [
+  ["北海道","ほっかいどう","北海道地方"],
+  ["青森県","あおもりけん","東北地方"],["岩手県","いわてけん","東北地方"],["宮城県","みやぎけん","東北地方"],["秋田県","あきたけん","東北地方"],["山形県","やまがたけん","東北地方"],["福島県","ふくしまけん","東北地方"],
+  ["茨城県","いばらきけん","関東地方"],["栃木県","とちぎけん","関東地方"],["群馬県","ぐんまけん","関東地方"],["埼玉県","さいたまけん","関東地方"],["千葉県","ちばけん","関東地方"],["東京都","とうきょうと","関東地方"],["神奈川県","かながわけん","関東地方"],
+  ["新潟県","にいがたけん","中部地方"],["富山県","とやまけん","中部地方"],["石川県","いしかわけん","中部地方"],["福井県","ふくいけん","中部地方"],["山梨県","やまなしけん","中部地方"],["長野県","ながのけん","中部地方"],["岐阜県","ぎふけん","中部地方"],["静岡県","しずおかけん","中部地方"],["愛知県","あいちけん","中部地方"],
+  ["三重県","みえけん","近畿地方"],["滋賀県","しがけん","近畿地方"],["京都府","きょうとふ","近畿地方"],["大阪府","おおさかふ","近畿地方"],["兵庫県","ひょうごけん","近畿地方"],["奈良県","ならけん","近畿地方"],["和歌山県","わかやまけん","近畿地方"],
+  ["鳥取県","とっとりけん","中国地方"],["島根県","しまねけん","中国地方"],["岡山県","おかやまけん","中国地方"],["広島県","ひろしまけん","中国地方"],["山口県","やまぐちけん","中国地方"],
+  ["徳島県","とくしまけん","四国地方"],["香川県","かがわけん","四国地方"],["愛媛県","えひめけん","四国地方"],["高知県","こうちけん","四国地方"],
+  ["福岡県","ふくおかけん","九州地方"],["佐賀県","さがけん","九州地方"],["長崎県","ながさきけん","九州地方"],["熊本県","くまもとけん","九州地方"],["大分県","おおいたけん","九州地方"],["宮崎県","みやざきけん","九州地方"],["鹿児島県","かごしまけん","九州地方"],["沖縄県","おきなわけん","九州地方"]
+].map(([name, yomi, region]) => ({ name, yomi, region }));
+const P = Object.fromEntries(PREFS.map(p => [p.name, p]));
+const REGIONS = [...new Set(PREFS.map(p => p.region))];
+
+// プロ野球12球団と本拠地の市
+const TEAMS = [
+  ["読売ジャイアンツ","よみうりジャイアンツ","東京都","ホームは東京ドーム（文京区）。セ・リーグのチームだよ。"],
+  ["東京ヤクルトスワローズ","とうきょうヤクルトスワローズ","東京都","ホームは神宮球場（新宿区）。東京には2つもプロ野球チームがあるんだ。"],
+  ["横浜DeNAベイスターズ","よこはまディーエヌエーベイスターズ","神奈川県","ホームは横浜市の横浜スタジアム。横浜は神奈川県の県庁所在地だよ。"],
+  ["中日ドラゴンズ","ちゅうにちドラゴンズ","愛知県","ホームは名古屋市。名古屋は愛知県の県庁所在地だよ。"],
+  ["阪神タイガース","はんしんタイガース","兵庫県","ホームの甲子園球場は兵庫県西宮市にあるよ。大阪府じゃないのがポイント！"],
+  ["広島東洋カープ","ひろしまとうようカープ","広島県","ホームは広島市。チームの色の赤は、広島の人たちの応援カラーだね。"],
+  ["北海道日本ハムファイターズ","ほっかいどうにっぽんハムファイターズ","北海道","ホームは北広島市。北海道は日本でいちばん広い都道府県だよ。"],
+  ["東北楽天ゴールデンイーグルス","とうほくらくてんゴールデンイーグルス","宮城県","ホームは仙台市。仙台は宮城県の県庁所在地で、東北地方でいちばん大きな町だよ。"],
+  ["埼玉西武ライオンズ","さいたませいぶライオンズ","埼玉県","ホームは所沢市。ドームの屋根がある球場だよ。"],
+  ["千葉ロッテマリーンズ","ちばロッテマリーンズ","千葉県","ホームは千葉市の海のそば。海風がつよい球場で有名だよ。"],
+  ["オリックス・バファローズ","オリックス・バファローズ","大阪府","ホームは大阪市のドーム球場。大阪は「府」がつくめずらしい都道府県だよ。"],
+  ["福岡ソフトバンクホークス","ふくおかソフトバンクホークス","福岡県","ホームは福岡市のドーム球場。福岡は九州地方でいちばん人が多い県だよ。"]
+].map(([name, yomi, pref, fact]) => ({ kind: "プロ野球", name, yomi, pref, fact }));
+
+// 高校野球の強豪校と甲子園の記録（2026年9月時点）。rare=1 は「びっくり記録」
+const SCHOOLS_RAW = {
+  "北海道":[
+    ["駒大苫小牧","こまだいとまこまい","2004年夏に北海道の学校として初めて甲子園で優勝。次の年も勝って夏2連覇！田中将大投手や伊藤大海投手の母校だよ。"],
+    ["北海","ほっかい","夏の甲子園に出た回数が全国でいちばん多い学校。2016年夏は準優勝したよ。",1]],
+  "青森県":[["八戸学院光星","はちのへがくいんこうせい","2011年夏・2012年春・2012年夏と、3大会つづけて決勝まで進んで準優勝。坂本勇人選手の母校だよ。",1]],
+  "岩手県":[["花巻東","はなまきひがし","大谷翔平選手と菊池雄星投手の母校。2009年春は準優勝、同じ年の夏もベスト4まで進んだよ。"]],
+  "宮城県":[["仙台育英","せんだいいくえい","2022年夏に東北の学校として初めて優勝。優勝旗が初めて「白河の関（東北の入り口）」をこえたと話題になったよ。",1]],
+  "秋田県":[["金足農業","かなあしのうぎょう","2018年夏、県立の農業高校なのに準優勝！準々決勝ではツーランスクイズでサヨナラ勝ちする名場面も。吉田輝星投手の母校だよ。",1]],
+  "山形県":[["日大山形","にちだいやまがた","2013年夏、山形県の学校として初めて甲子園ベスト4に進んだよ。中野拓夢選手の母校。"]],
+  "福島県":[["聖光学院","せいこうがくいん","夏の福島大会で13年つづけて優勝した記録をもつ学校。2022年夏は甲子園ベスト4まで進んだよ。",1]],
+  "茨城県":[["常総学院","じょうそうがくいん","2001年春と2003年夏に甲子園で優勝。茨城県を代表する強豪校だよ。"]],
+  "栃木県":[["作新学院","さくしんがくいん","1962年、史上はじめて春と夏の両方で優勝する「春夏連覇」をなしとげた学校。2016年夏にも優勝したよ。",1]],
+  "群馬県":[
+    ["健大高崎","けんだいたかさき","足をいかした「機動破壊」の野球で有名。2024年春に群馬県の学校として初めてセンバツ優勝、2026年夏も準優勝したよ。"],
+    ["前橋育英","まえばしいくえい","2013年夏、はじめて出た甲子園でいきなり優勝！そのときのエースが高橋光成投手（今は西武）だよ。",1]],
+  "埼玉県":[
+    ["浦和学院","うらわがくいん","2013年春のセンバツで優勝。埼玉県で甲子園に出た回数がとても多い学校だよ。"],
+    ["花咲徳栄","はなさきとくはる","2017年夏、埼玉県の学校として初めて夏の甲子園で優勝したよ。"]],
+  "千葉県":[["習志野","ならしの","夏の甲子園で2回優勝（1967年・1975年）。ブラスバンドの大きくてかっこいい応援は「美爆音」とよばれているよ。",1]],
+  "東京都":[
+    ["早稲田実業","わせだじつぎょう","2006年夏の決勝は駒大苫小牧と引き分けて次の日に再試合、そこで勝って優勝！清宮幸太郎選手の母校だよ。",1],
+    ["日大三","にちだいさん","2001年と2011年に夏の甲子園で優勝。2025年夏も決勝まで進んで準優勝したよ。"],
+    ["帝京","ていきょう","夏2回・春1回、甲子園で優勝。2006年夏には智弁和歌山と「12対13」のすごい打ち合いをしたよ。"]],
+  "神奈川県":[
+    ["横浜","よこはま","1998年に春夏連覇。夏の決勝では松坂大輔投手がノーヒットノーラン！2025年春にも優勝したよ。学校の名前は「横浜」だけど、県は神奈川県だよ。",1],
+    ["東海大相模","とうかいだいさがみ","春と夏あわせて甲子園で5回優勝。森下翔太選手（阪神）の母校だよ。"]],
+  "新潟県":[["日本文理","にほんぶんり","2009年夏の決勝、9回2アウトから5点を取って1点差までおいつめた「あきらめない野球」で有名。準優勝だったよ。",1]],
+  "富山県":[["新湊","しみなと","1986年春、はじめて出たセンバツで強い学校につぎつぎ勝ってベスト4。「新湊旋風」とよばれたよ。",1]],
+  "石川県":[["星稜","せいりょう","1979年に延長18回の大熱戦、1992年には松井秀喜選手が5打席つづけて敬遠されたことも。2019年夏は奥川恭伸投手で準優勝！",1]],
+  "福井県":[["敦賀気比","つるがけひ","2015年春に北陸の学校として初めて甲子園で優勝。準決勝では同じ選手が2打席つづけて満塁ホームランを打ったよ！",1]],
+  "山梨県":[["山梨学院","やまなしがくいん","2023年春、山梨県の学校として初めて甲子園で優勝したよ。"]],
+  "長野県":[["松商学園","まつしょうがくえん","むかしの名前は松本商業。1928年の夏に優勝していて、長野県の学校が夏に優勝したのはこの1回だけだよ。",1]],
+  "岐阜県":[["県立岐阜商業","けんりつぎふしょうぎょう","県立高校なのに春夏あわせて4回優勝している強豪。2025年夏もベスト4まで進んだよ。"]],
+  "静岡県":[["常葉大菊川","とこはだいきくがわ","2007年春のセンバツで優勝。静岡県の強豪校だよ。"]],
+  "愛知県":[
+    ["中京大中京","ちゅうきょうだいちゅうきょう","夏の優勝7回は全国でいちばん。1931〜1933年には夏3連覇！1933年には延長25回という、いまもやぶられていない長い試合をしたよ。",1],
+    ["東邦","とうほう","春のセンバツで5回優勝していて、これは全国でいちばん多い記録。2019年は平成最後のセンバツで優勝したよ。",1]],
+  "三重県":[["三重","みえ","1969年春にセンバツ優勝。2014年夏には決勝まで進んで準優勝したよ。"]],
+  "滋賀県":[["近江","おうみ","2001年夏と2022年春に準優勝。滋賀県からはまだ優勝校が出ていないので、近江が一番近いところまで行っているよ。"]],
+  "京都府":[
+    ["龍谷大平安","りゅうこくだいへいあん","甲子園に出た回数がとても多い、100年以上の歴史をもつ伝統校。2014年春に優勝したよ。"],
+    ["京都国際","きょうとこくさい","2024年夏にはじめて優勝。決勝は延長タイブレークで関東第一に2対1で勝ったよ。"]],
+  "大阪府":[
+    ["大阪桐蔭","おおさかとういん","2012年と2018年に春夏連覇。2回も春夏連覇したのはここだけ！2026年春にも優勝して、春夏あわせて10回目の優勝だよ。",1],
+    ["履正社","りせいしゃ","2019年夏、決勝で星稜に勝って初めて優勝。山田哲人選手の母校だよ。"]],
+  "兵庫県":[
+    ["報徳学園","ほうとくがくえん","負けていても最後にひっくり返す「逆転の報徳」で有名。2023年と2024年は2年つづけてセンバツ準優勝。小園海斗選手の母校だよ。"],
+    ["明石商業","あかししょうぎょう","2019年は春も夏もベスト4まで進んだ県立高校。甲子園球場があるのも同じ兵庫県だよ。"]],
+  "奈良県":[
+    ["天理","てんり","夏の甲子園で1986年と1990年の2回優勝した、奈良県の強豪校だよ。"],
+    ["智弁学園","ちべんがくえん","2016年春に優勝、2026年春も準優勝。「智弁和歌山」と名前がにているけど、こっちは奈良県の学校だよ！",1]],
+  "和歌山県":[["智弁和歌山","ちべんわかやま","2026年夏、決勝で健大高崎に4対3で勝って優勝！2006年には帝京に9回に8点取られてから、その裏に逆転サヨナラ勝ちしたよ。",1]],
+  "鳥取県":[["鳥取城北","とっとりじょうほく","鳥取県の強豪校。鳥取県は高校の数が少なく、夏の県大会に出る学校の数が全国でいちばん少ない県なんだ。",1]],
+  "島根県":[["大社","たいしゃ","2024年夏、報徳学園や早稲田実業に勝ってベスト8。早稲田実業戦はエースが延長11回に自分でサヨナラヒット！93年ぶりのベスト8だったよ。",1]],
+  "岡山県":[["岡山東商業","おかやまひがししょうぎょう","1965年春のセンバツで優勝した岡山県の学校だよ。"]],
+  "広島県":[["広島商業","ひろしましょうぎょう","夏の甲子園で6回優勝している伝統校。柳田悠岐選手（ソフトバンク）の母校だよ。"]],
+  "山口県":[["下関国際","しものせきこくさい","2022年夏、大阪桐蔭などの強い学校に勝って決勝へ。準優勝したよ。"]],
+  "徳島県":[["池田","いけだ","1974年春は部員がたった11人で準優勝！「さわやかイレブン」とよばれたよ。1982年夏は強力な「やまびこ打線」で優勝。",1]],
+  "香川県":[["高松商業","たかまつしょうぎょう","1924年、いちばん最初のセンバツで優勝した学校。浅野翔吾選手（巨人）の母校だよ。",1]],
+  "愛媛県":[
+    ["松山商業","まつやましょうぎょう","1996年夏の決勝、10回にライトからの「奇跡のバックホーム」でサヨナラ負けをふせいで優勝。1969年には延長18回引き分け・再試合も。",1],
+    ["済美","さいび","野球部ができて3年目の2004年春、はじめて出たセンバツでいきなり優勝したよ！",1]],
+  "高知県":[["明徳義塾","めいとくぎじゅく","2002年夏に甲子園で優勝。高知県の強豪校で、甲子園の常連だよ。"]],
+  "福岡県":[["九州国際大付","きゅうしゅうこくさいだいふ","2011年春のセンバツで準優勝。福岡県の強豪校だよ。"]],
+  "佐賀県":[["佐賀北","さがきた","2007年夏、県立高校が決勝の8回に逆転満塁ホームランで優勝！「がばい旋風」とよばれたよ。",1]],
+  "長崎県":[["清峰","せいほう","2009年春、長崎県の学校として初めて甲子園で優勝したよ。"]],
+  "熊本県":[
+    ["熊本工業","くまもとこうぎょう","1996年夏の決勝で松山商業と対戦。10回のサヨナラのチャンスを「奇跡のバックホーム」でふせがれ、準優勝だったよ。",1],
+    ["九州学院","きゅうしゅうがくいん","村上宗隆選手の母校。熊本県の強豪校だよ。"]],
+  "大分県":[["明豊","めいほう","2021年春のセンバツで準優勝。今宮健太選手（ソフトバンク）の母校だよ。"]],
+  "宮崎県":[["延岡学園","のべおかがくえん","2013年夏、宮崎県の学校として初めて決勝まで進んで準優勝したよ。"]],
+  "鹿児島県":[
+    ["神村学園","かみむらがくえん","2023年夏と2024年夏、2年つづけて甲子園ベスト4に進んだよ。"],
+    ["鹿児島実業","かごしまじつぎょう","1996年春、鹿児島県の学校として初めて甲子園で優勝したよ。"]],
+  "沖縄県":[
+    ["興南","こうなん","2010年に春夏連覇！沖縄の学校で初めて夏に優勝したよ。宮城大弥投手（オリックス）の母校。",1],
+    ["沖縄尚学","おきなわしょうがく","1999年春に沖縄県の学校として初めて甲子園で優勝。2025年夏には決勝で日大三に勝って、夏も初優勝！"]]
+};
+
+// 今シーズン（2026年）の在籍選手と出身の都道府県
+const PLAYERS = [
+  ["坂本勇人","さかもとはやと","巨人","兵庫県","兵庫県伊丹市の出身。高校は青森県の光星学院（今の八戸学院光星）。小学生のとき、田中将大投手と同じチームでバッテリーを組んでいたよ！",1],
+  ["田中将大","たなかまさひろ","巨人","兵庫県","坂本選手と同じ兵庫県伊丹市の出身。高校は北海道の駒大苫小牧で、2005年夏に甲子園優勝、2006年夏は決勝再試合を戦ったよ。",1],
+  ["戸郷翔征","とごうしょうせい","巨人","宮崎県","宮崎県都城市の出身。高校も宮崎県の聖心ウルスラ学園だよ。"],
+  ["浅野翔吾","あさのしょうご","巨人","香川県","香川県の出身。高松商業で2022年夏の甲子園でホームラン3本、ベスト8まで進んだよ。"],
+  ["山田哲人","やまだてつと","ヤクルト","兵庫県","兵庫県豊岡市の出身。高校は大阪府の履正社。「打率3割・30本塁打・30盗塁」のトリプルスリーを3回達成したのはこの選手だけ！",1],
+  ["奥川恭伸","おくがわやすのぶ","ヤクルト","石川県","石川県かほく市の出身。地元の星稜のエースとして2019年夏の甲子園で準優勝したよ。"],
+  ["牧秀悟","まきしゅうご","DeNA","長野県","長野県中野市の出身。高校は長野県の松本第一、大学は東京の中央大学だよ。"],
+  ["藤浪晋太郎","ふじなみしんたろう","DeNA","大阪府","大阪府堺市の出身。大阪桐蔭のエースとして2012年に春夏連覇。そのときの捕手は森友哉選手だよ。",1],
+  ["筒香嘉智","つつごうよしとも","DeNA","和歌山県","和歌山県橋本市の出身。高校は神奈川県の横浜高校だよ。"],
+  ["高橋宏斗","たかはしひろと","中日","愛知県","愛知県尾張旭市の出身。高校は地元の中京大中京で、プロも地元の中日に入ったよ。"],
+  ["根尾昂","ねおあきら","中日","岐阜県","岐阜県飛騨市の出身。大阪桐蔭で2018年に春夏連覇したメンバーだよ。"],
+  ["細川成也","ほそかわせいや","中日","茨城県","茨城県の出身。高校は茨城県の明秀日立だよ。"],
+  ["岡林勇希","おかばやしゆうき","中日","三重県","三重県松阪市の出身。高校も三重県の菰野（こもの）高校だよ。"],
+  ["佐藤輝明","さとうてるあき","阪神","兵庫県","兵庫県西宮市の出身。阪神のホーム・甲子園球場がある町で生まれた、まさに地元の選手！",1],
+  ["近本光司","ちかもとこうじ","阪神","兵庫県","兵庫県淡路市の出身。淡路島で育って、高校は兵庫県の社（やしろ）高校だよ。"],
+  ["中野拓夢","なかのたくむ","阪神","山形県","山形県の出身。高校は地元の日大山形だよ。"],
+  ["森下翔太","もりしたしょうた","阪神","神奈川県","神奈川県横浜市の出身。高校は東海大相模だよ。"],
+  ["小園海斗","こぞのかいと","広島","兵庫県","兵庫県宝塚市の出身。高校は報徳学園だよ。"],
+  ["森下暢仁","もりしたまさと","広島","大分県","大分県大分市の出身。高校は地元の大分商業だよ。"],
+  ["中村奨成","なかむらしょうせい","広島","広島県","広島県廿日市市の出身。高校3年の2017年夏、甲子園で1大会6本のホームランを打って、清原和博選手の記録をぬいたよ！",1],
+  ["菊池涼介","きくちりょうすけ","広島","東京都","東京都東大和市の出身。守備の名人で、セカンドのゴールデングラブ賞をたくさんとっているよ。"],
+  ["伊藤大海","いとうひろみ","日本ハム","北海道","北海道鹿部町の出身。高校は駒大苫小牧、プロも地元北海道の日本ハムに入ったよ。"],
+  ["清宮幸太郎","きよみやこうたろう","日本ハム","東京都","東京都の出身。早稲田実業で高校時代に111本のホームランを打ったよ！",1],
+  ["万波中正","まんなみちゅうせい","日本ハム","東京都","東京都の出身。高校は神奈川県の横浜高校だよ。"],
+  ["浅村栄斗","あさむらひでと","楽天","大阪府","大阪府大阪市の出身。大阪桐蔭で2008年夏に甲子園優勝したよ。"],
+  ["辰己涼介","たつみりょうすけ","楽天","兵庫県","兵庫県の出身。高校は兵庫県の社（やしろ）高校。近本選手と同じ高校だよ！",1],
+  ["早川隆久","はやかわたかひさ","楽天","千葉県","千葉県の出身。高校は千葉県の木更津総合だよ。"],
+  ["平良海馬","たいらかいま","西武","沖縄県","沖縄県石垣市の出身。石垣島の八重山商工から、プロのすごい投手になったよ。"],
+  ["高橋光成","たかはしこうな","西武","群馬県","群馬県沼田市の出身。前橋育英の2年生エースとして2013年夏に甲子園初出場・初優勝！",1],
+  ["種市篤暉","たねいちあつき","ロッテ","青森県","青森県三沢市の出身。高校は青森県の八戸工大一だよ。"],
+  ["藤原恭大","ふじわらきょうた","ロッテ","大阪府","大阪府の出身。大阪桐蔭で2018年に春夏連覇したメンバーだよ。"],
+  ["角中勝也","かくなかかつや","ロッテ","石川県","石川県七尾市の出身。首位打者（いちばん打率が高い人）に2回なったよ。"],
+  ["宮城大弥","みやぎひろや","オリックス","沖縄県","沖縄県宜野湾市の出身。高校は興南だよ。名前は「宮城」だけど、出身は沖縄県！",1],
+  ["吉田輝星","よしだこうせい","オリックス","秋田県","秋田県の出身。金足農業のエースとして2018年夏の甲子園で準優勝、「金農旋風」を起こしたよ。",1],
+  ["森友哉","もりともや","オリックス","大阪府","大阪府堺市の出身。大阪桐蔭で2012年に春夏連覇。藤浪晋太郎投手とバッテリーを組んでいたよ。"],
+  ["柳田悠岐","やなぎたゆうき","ソフトバンク","広島県","広島県広島市の出身。高校は夏の優勝6回の広島商業だよ。"],
+  ["今宮健太","いまみやけんた","ソフトバンク","大分県","大分県別府市の出身。高校は明豊で、甲子園で投手としても活やくしたよ。"],
+  ["山川穂高","やまかわほたか","ソフトバンク","沖縄県","沖縄県の出身。高校は沖縄県の中部商業。ホームラン王に何回もなっているよ。"],
+  ["近藤健介","こんどうけんすけ","ソフトバンク","千葉県","千葉県千葉市の出身。高校は神奈川県の横浜高校だよ。"],
+  ["周東佑京","しゅうとううきょう","ソフトバンク","群馬県","群馬県太田市の出身。とても足がはやくて、盗塁王に何回もなっているよ。"]
+].map(([name, yomi, team, pref, fact, rare]) => ({ kind: "選手", name: name + "選手", sub: team, yomi, pref, fact, rare }));
+
+function schoolQuestion(prefName) {
+  const list = SCHOOLS_RAW[prefName];
+  const [name, yomi, fact, rare] = list[Math.floor(Math.random() * list.length)];
+  return { kind: "高校野球", name: name + "高校", yomi, pref: prefName, fact, rare };
+}
+
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+// 同じ都道府県ができるだけ重ならないように選ぶ
+function pickSpread(list, n, used = new Set()) {
+  const out = [];
+  for (const q of shuffle(list)) {
+    if (out.length >= n) break;
+    if (!used.has(q.pref)) { out.push(q); used.add(q.pref); }
+  }
+  for (const q of shuffle(list)) { if (out.length >= n) break; if (!out.includes(q)) out.push(q); }
+  return out;
+}
+
+function buildQuestions(mode) {
+  if (mode === "pro") return shuffle(TEAMS).slice(0, 9);
+  if (mode === "player") return pickSpread(PLAYERS, 9);
+  if (mode === "hs") return shuffle(Object.keys(SCHOOLS_RAW)).slice(0, 9).map(schoolQuestion);
+  if (mode === "new") {
+    const missing = PREFS.map(p => p.name).filter(n => !stamps.has(n));
+    const pool = missing.length >= 9 ? missing : Object.keys(SCHOOLS_RAW);
+    return shuffle(pool).slice(0, 9).map(schoolQuestion);
+  }
+  // mix: 2 teams + 3 players + 4 schools
+  const used = new Set();
+  const t = pickSpread(TEAMS, 2, used);
+  const pl = pickSpread(PLAYERS, 3, used);
+  const s = shuffle(Object.keys(SCHOOLS_RAW).filter(n => !used.has(n))).slice(0, 4).map(schoolQuestion);
+  return shuffle([...t, ...pl, ...s]);
+}
+
+function makeChoices(correct) {
+  const c = P[correct];
+  const near = shuffle(PREFS.filter(p => p.region === c.region && p.name !== correct)).slice(0, 1);
+  const taken = new Set([correct, ...near.map(p => p.name)]);
+  const far = shuffle(PREFS.filter(p => !taken.has(p.name))).slice(0, 3 - near.length);
+  return shuffle([c, ...near, ...far]);
+}
+
+// stamps (kept in this browser only)
+let stamps = new Set();
+try { stamps = new Set(JSON.parse(localStorage.getItem("tdfk-stamps") || "[]")); } catch (e) {}
+const saveStamps = () => { try { localStorage.setItem("tdfk-stamps", JSON.stringify([...stamps])); } catch (e) {} };
+
+let game = null;
+const $ = id => document.getElementById(id);
+const stage = $("stage");
+
+function drawBoard() {
+  const head = ["", ...Array.from({ length: 9 }, (_, i) => i + 1), "R"];
+  $("board-head").innerHTML = head.map(h => `<th>${h}</th>`).join("");
+  const cells = Array.from({ length: 9 }, (_, i) => {
+    const r = game ? game.results[i] : undefined;
+    const now = game && !game.over && i === game.i ? " now" : "";
+    if (r === true) return `<td class="hit${now}">1</td>`;
+    if (r === false) return `<td class="out${now}">0</td>`;
+    return `<td class="${now.trim()}"></td>`;
+  }).join("");
+  const total = game ? game.results.filter(Boolean).length : 0;
+  $("board-row").innerHTML = `<td class="name">きみ</td>${cells}<td class="total">${total}</td>`;
+  const last = game && game.results.length ? game.results[game.results.length - 1] : null;
+  $("lamp-h").classList.toggle("on", last === true && !game.over);
+  const outs = game ? game.results.filter(r => r === false).length % 3 : 0;
+  ["lamp-o1", "lamp-o2", "lamp-o3"].forEach((id, k) => $(id).classList.toggle("on", k < outs));
+}
+
+function showStart() {
+  game = null;
+  drawBoard();
+  const left = 47 - stamps.size;
+  stage.innerHTML = `
+    <div class="wrap" style="gap:12px">
+      <p class="intro">チームや選手、高校の名前を見て、どこの都道府県か当てよう。せいかいした都道府県はスタンプ帳にたまっていくよ。</p>
+      <div class="modes">
+        <button class="mode" data-mode="pro"><b>プロ野球</b><span>12球団のホームはどこ？</span></button>
+        <button class="mode" data-mode="player"><b>選手</b><span>あの選手の出身はどこ？</span></button>
+        <button class="mode" data-mode="hs"><b>高校野球</b><span>甲子園の強い学校はどこの県？</span></button>
+        <button class="mode" data-mode="mix"><b>ミックス</b><span>球団・選手・高校をまぜて9問</span></button>
+        <button class="mode" data-mode="new"><b>スタンプあつめ</b><span>まだの都道府県から出るよ（のこり${left}）</span></button>
+      </div>
+    </div>`;
+  stage.querySelectorAll(".mode").forEach(b => b.addEventListener("click", () => startGame(b.dataset.mode)));
+}
+
+function startGame(mode) {
+  game = { mode, qs: buildQuestions(mode), i: 0, results: [], over: false, answered: false };
+  showQuestion();
+}
+
+function showQuestion() {
+  const q = game.qs[game.i];
+  game.answered = false;
+  game.choices = makeChoices(q.pref);
+  drawBoard();
+  const ask = q.kind === "プロ野球" ? "このチームのホームは どこの都道府県？" : q.kind === "選手" ? "この選手の出身は どこの都道府県？" : "この高校は どこの都道府県？";
+  stage.innerHTML = `
+    <div class="wrap" style="gap:12px">
+      <div class="pitch">
+        <div><span class="inning">${game.i + 1}回</span><span class="kind">${q.kind}</span>${q.sub ? `<span class="kind team">${q.sub}</span>` : ""}</div>
+        <p class="subject">${q.name}</p>
+        <div class="reading">${q.yomi}</div>
+        <p class="ask">${ask}</p>
+        <div class="hint-row"><button class="hint-btn" id="hint-btn">ヒントを見る</button><span class="hint" id="hint" hidden>${P[q.pref].region}だよ</span></div>
+      </div>
+      <div class="choices">
+        ${game.choices.map((c, k) => `<button class="choice" id="choice-${k}" data-k="${k}"><b>${c.name}</b><span>${c.yomi}</span></button>`).join("")}
+      </div>
+      <div id="call"></div>
+    </div>`;
+  $("hint-btn").addEventListener("click", () => { $("hint").hidden = false; $("hint-btn").hidden = true; });
+  stage.querySelectorAll(".choice").forEach(b => b.addEventListener("click", () => answer(+b.dataset.k)));
+}
+
+function answer(k) {
+  if (game.answered) return;
+  game.answered = true;
+  const q = game.qs[game.i];
+  const picked = game.choices[k];
+  const ok = picked.name === q.pref;
+  game.results.push(ok);
+  if (ok) { stamps.add(q.pref); saveStamps(); }
+  stage.querySelectorAll(".choice").forEach((b, j) => {
+    b.disabled = true;
+    if (game.choices[j].name === q.pref) b.classList.add("right");
+    else if (j === k) b.classList.add("wrong");
+  });
+  const p = P[q.pref];
+  const isLast = game.i === 8;
+  const hitWords = ["ヒット！", "ツーベース！", "ホームラン！", "タイムリー！"];
+  const title = ok ? hitWords[Math.floor(Math.random() * hitWords.length)] : "おしい、アウト！";
+  $("call").innerHTML = `
+    <div class="call ${ok ? "hit" : ""}">
+      <h2>${title}</h2>
+      <p>${q.name}は <b>${p.name}</b>（${p.yomi}）${q.kind === "選手" ? "出身" : ""}だよ。${ok ? "スタンプゲット！" : ""}</p>
+      <p class="fact">${q.rare ? `<span class="rare">びっくり記録</span>` : ""}${q.fact}</p>
+      <button class="next" id="next-btn">${isLast ? "しあい終了！けっかを見る" : "つぎのバッター"}</button>
+    </div>`;
+  drawBoard();
+  $("next-btn").focus({ preventScroll: true });
+  $("next-btn").addEventListener("click", () => {
+    if (isLast) return showResult();
+    game.i++;
+    showQuestion();
+  });
+}
+
+function showResult() {
+  game.over = true;
+  drawBoard();
+  const score = game.results.filter(Boolean).length;
+  const msg = score === 9 ? ["パーフェクトゲーム！", "9回ぜんぶせいかい。もう都道府県のエースだね。"]
+    : score >= 7 ? ["だいしょうり！", "あと少しでパーフェクト。まちがえた県をもう一回おぼえよう。"]
+    : score >= 4 ? ["ナイスゲーム！", "いい打線だった！くりかえすと、どんどん点がとれるよ。"]
+    : ["つぎは逆転だ！", "まずはヒントを見ながらでOK。地方から考えてみよう。"];
+  const missed = game.qs.filter((q, i) => !game.results[i]);
+  stage.innerHTML = `
+    <div class="result">
+      <div class="big">${score}点</div>
+      <h2>${msg[0]}</h2>
+      <p>${msg[1]}</p>
+      ${missed.length ? `<p>おさらい：${missed.map(q => `${q.name} → <b style="color:var(--chalk)">${q.pref}</b>`).join("、")}</p>` : ""}
+      <p>スタンプ帳 ${stamps.size} / 47</p>
+      <div class="row">
+        <button class="next" id="again">もう一回（おなじモード）</button>
+        <button class="ghost" id="home">モードをえらぶ</button>
+        <button class="ghost" id="to-book">スタンプ帳を見る</button>
+      </div>
+    </div>`;
+  $("again").addEventListener("click", () => startGame(game.mode));
+  $("home").addEventListener("click", showStart);
+  $("to-book").addEventListener("click", () => setTab("book"));
+}
+
+function drawBook(confirming) {
+  const v = $("view-book");
+  v.innerHTML = `
+    <div class="book-head"><h2>都道府県スタンプ帳</h2><span class="count">${stamps.size} / 47</span></div>
+    <p class="intro">せいかいした都道府県にボールのスタンプがつくよ。47こ ぜんぶ集めたら 日本一！</p>
+    ${REGIONS.map(r => `
+      <div class="region">
+        <h3>${r}</h3>
+        <div class="cells">${PREFS.filter(p => p.region === r).map(p => `<div class="cell ${stamps.has(p.name) ? "got" : ""}"><b>${p.name}</b><span>${p.yomi}</span></div>`).join("")}</div>
+      </div>`).join("")}
+    ${confirming
+      ? `<div class="confirm">スタンプを ぜんぶ消しますか？ <button class="ghost reset" id="reset-yes">消す</button><button class="ghost reset" id="reset-no">やめる</button></div>`
+      : `<button class="ghost reset" id="reset">スタンプをリセット</button>`}`;
+  if (confirming) {
+    $("reset-yes").addEventListener("click", () => { stamps = new Set(); saveStamps(); drawBook(false); });
+    $("reset-no").addEventListener("click", () => drawBook(false));
+  } else {
+    $("reset").addEventListener("click", () => drawBook(true));
+  }
+}
+
+function setTab(t) {
+  $("tab-play").setAttribute("aria-selected", t === "play");
+  $("tab-book").setAttribute("aria-selected", t === "book");
+  $("view-play").hidden = t !== "play";
+  $("view-book").hidden = t !== "book";
+  if (t === "book") drawBook(false);
+  if (t === "play" && (!game || game.over)) showStart();
+}
+$("tab-play").addEventListener("click", () => setTab("play"));
+$("tab-book").addEventListener("click", () => setTab("book"));
+
+showStart();
+</script>
+
+</body>
+</html>
