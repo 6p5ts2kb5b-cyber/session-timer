@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Maru+Gothic:wght@500;700;900&display=swap">
 <style>
-/* Layout: one narrow column styled like a hand-operated ballpark scoreboard; question card = the pitch, answers = swings */
+/* Layout: one narrow column styled like a hand-operated ballpark scoreboard; question card = the pitch; map = the away-game travel board */
 :root {
   --board: #173b2c;
   --board-deep: #0f2a1f;
@@ -19,6 +19,7 @@
   --stitch: #e4493e;
   --line: rgba(244, 241, 227, 0.16);
   --dirt: #c98b55;
+  --land: #2c5a45;
   --f-display: "Dela Gothic One", "Hiragino Kaku Gothic StdN", "Yu Gothic", sans-serif;
   --f-body: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif;
   color-scheme: dark;
@@ -34,115 +35,91 @@ body {
   padding-inline: 16px;
   padding-block: 20px 40px;
 }
-.wrap { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+.wrap { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+.stack { display: flex; flex-direction: column; gap: 12px; }
 
 header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-h1 {
-  font-family: var(--f-display);
-  font-weight: 400;
-  font-size: clamp(22px, 6vw, 30px);
-  line-height: 1.2;
-  margin: 0;
-  letter-spacing: 0.02em;
-  text-wrap: balance;
-}
-h1 small { display: block; font-family: var(--f-body); font-size: 13px; font-weight: 700; color: var(--chalk-dim); letter-spacing: 0.08em; }
+h1 { font-family: var(--f-display); font-weight: 400; font-size: clamp(22px, 6vw, 30px); line-height: 1.2; margin: 0; letter-spacing: .02em; text-wrap: balance; }
+h1 small { display: block; font-family: var(--f-body); font-size: 13px; font-weight: 700; color: var(--chalk-dim); letter-spacing: .08em; }
+h2.sec { font-family: var(--f-display); font-weight: 400; font-size: 20px; margin: 0; }
+.muted { color: var(--chalk-dim); font-size: 14px; margin: 0; }
+.player-chip { display: flex; align-items: center; gap: 8px; font-weight: 900; }
+.player-chip .who { background: var(--chalk); color: var(--board-deep); border-radius: 999px; padding: 3px 12px; }
+
+button { font: inherit; cursor: pointer; }
+button:focus-visible, input:focus-visible { outline: 3px solid var(--lamp); outline-offset: 2px; }
+.ghost { font-weight: 700; background: transparent; color: var(--chalk); border: 2px solid var(--line); border-radius: 10px; padding: 8px 14px; }
+.ghost.small { font-size: 13px; padding: 4px 10px; border-radius: 999px; }
+.primary { font-family: var(--f-display); font-size: 18px; background: var(--chalk); color: var(--board-deep); border: none; border-radius: 10px; padding: 12px 16px; box-shadow: 0 4px 0 var(--dirt); }
+.primary:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--dirt); }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
 .tabs { display: flex; gap: 6px; }
-.tab {
-  font: inherit; font-weight: 700; font-size: 14px;
-  background: transparent; color: var(--chalk-dim);
-  border: 2px solid var(--line); border-radius: 999px;
-  padding: 6px 14px; cursor: pointer;
-}
+.tab { font-weight: 700; font-size: 14px; background: transparent; color: var(--chalk-dim); border: 2px solid var(--line); border-radius: 999px; padding: 6px 14px; }
 .tab[aria-selected="true"] { background: var(--chalk); color: var(--board-deep); border-color: var(--chalk); }
 
-button:focus-visible { outline: 3px solid var(--lamp); outline-offset: 2px; }
+/* save slots */
+.slots { display: flex; flex-direction: column; gap: 10px; }
+.slot { display: grid; grid-template-columns: 44px 1fr auto; gap: 12px; align-items: center; background: var(--board); border: 2px solid var(--line); border-radius: 12px; padding: 12px; }
+.slot .no { font-family: var(--f-display); font-size: 22px; text-align: center; color: var(--lamp); }
+.slot .info { min-width: 0; }
+.slot .nm { font-weight: 900; font-size: 18px; overflow-wrap: anywhere; }
+.slot .meta { font-size: 13px; color: var(--chalk-dim); }
+.slot input { font: inherit; font-weight: 700; width: 100%; background: var(--board-cell); color: var(--chalk); border: 2px solid var(--line); border-radius: 8px; padding: 6px 10px; }
+.slot .acts { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+@media (max-width: 440px) { .slot { grid-template-columns: 36px 1fr; } .slot .acts { grid-column: 1 / -1; justify-content: flex-start; } }
+
+/* mode select */
+.modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+.mode { text-align: left; background: var(--chalk); color: var(--board-deep); border: none; border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; box-shadow: 0 4px 0 var(--dirt); transition: transform .1s; }
+.mode:hover { transform: translateY(-2px); }
+.mode:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--dirt); }
+.mode b { font-family: var(--f-display); font-weight: 400; font-size: 19px; }
+.mode span { font-size: 13px; font-weight: 700; opacity: .75; }
+.mode .best { font-size: 12px; font-weight: 900; color: var(--stitch); opacity: 1; }
+.mode.trip { grid-column: 1 / -1; background: var(--lamp); }
+.types { display: flex; gap: 8px; flex-wrap: wrap; }
+.type { font-weight: 900; font-size: 14px; background: transparent; color: var(--chalk-dim); border: 2px dashed var(--line); border-radius: 999px; padding: 5px 14px; }
+.type[aria-pressed="true"] { background: var(--stitch); color: var(--chalk); border: 2px solid var(--stitch); }
 
 /* scoreboard */
-.board {
-  background: var(--board);
-  border: 3px solid var(--chalk);
-  border-radius: 6px;
-  padding: 12px;
-  box-shadow: 0 6px 0 rgba(0,0,0,.35);
-}
+.board { background: var(--board); border: 3px solid var(--chalk); border-radius: 6px; padding: 12px; box-shadow: 0 6px 0 rgba(0,0,0,.35); }
 .board-scroll { overflow-x: auto; }
 .board table { border-collapse: separate; border-spacing: 4px; width: 100%; min-width: 360px; }
-.board th {
-  font-family: var(--f-display); font-weight: 400; font-size: 13px; color: var(--chalk-dim);
-  text-align: center; padding: 0;
-}
-.board td {
-  background: var(--board-cell);
-  font-family: var(--f-display);
-  font-size: 22px;
-  text-align: center;
-  height: 42px;
-  width: 9%;
-  color: var(--chalk);
-  border-radius: 3px;
-  font-variant-numeric: tabular-nums;
-}
-.board td.name { width: auto; font-size: 14px; text-align: left; padding-inline: 8px; background: transparent; white-space: nowrap; }
+.board th { font-family: var(--f-display); font-weight: 400; font-size: 13px; color: var(--chalk-dim); text-align: center; padding: 0; }
+.board td { background: var(--board-cell); font-family: var(--f-display); font-size: 22px; text-align: center; height: 42px; width: 9%; color: var(--chalk); border-radius: 3px; font-variant-numeric: tabular-nums; }
+.board td.name { width: auto; font-size: 14px; text-align: left; padding-inline: 8px; background: transparent; white-space: nowrap; max-width: 7em; overflow: hidden; text-overflow: ellipsis; }
 .board td.now { box-shadow: inset 0 0 0 2px var(--lamp); }
 .board td.hit { color: var(--lamp); }
 .board td.out { color: var(--chalk-dim); }
 .board td.total { background: var(--chalk); color: var(--board-deep); width: 12%; }
 .board-meta { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 13px; color: var(--chalk-dim); gap: 10px; flex-wrap: wrap; }
-.lamps { display: flex; gap: 14px; }
-.lamps span { display: inline-flex; align-items: center; gap: 5px; font-family: var(--f-display); }
-.lamp { width: 12px; height: 12px; border-radius: 50%; background: var(--board-cell); border: 1px solid var(--line); display: inline-block; }
-.lamp.on { background: var(--lamp); border-color: var(--lamp); box-shadow: 0 0 8px var(--lamp); }
-
-/* mode select */
-.intro { font-size: 15px; color: var(--chalk-dim); margin: 0; }
-.modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
-.mode {
-  font: inherit; text-align: left; cursor: pointer;
-  background: var(--chalk); color: var(--board-deep);
-  border: none; border-radius: 10px;
-  padding: 14px 16px;
-  display: flex; flex-direction: column; gap: 2px;
-  box-shadow: 0 4px 0 var(--dirt);
-  transition: transform .1s;
-}
-.mode:hover { transform: translateY(-2px); }
-.mode:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--dirt); }
-.mode b { font-family: var(--f-display); font-weight: 400; font-size: 19px; }
-.mode span { font-size: 13px; font-weight: 700; opacity: .75; }
+.tally { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.tally div { background: var(--board-cell); border-radius: 4px; text-align: center; padding: 6px 4px; }
+.tally b { display: block; font-family: var(--f-display); font-weight: 400; font-size: 28px; line-height: 1.2; color: var(--lamp); font-variant-numeric: tabular-nums; }
+.tally span { font-size: 12px; color: var(--chalk-dim); font-weight: 700; }
+.trip-bar { height: 12px; background: var(--board-cell); border-radius: 999px; overflow: hidden; margin-top: 8px; }
+.trip-bar i { display: block; height: 100%; background: var(--lamp); }
+.trip-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.trip-head b { font-family: var(--f-display); font-weight: 400; font-size: 22px; }
 
 /* pitch card */
-.pitch {
-  background: var(--chalk);
-  color: var(--board-deep);
-  border-radius: 12px;
-  padding: 18px 18px 16px;
-  position: relative;
-  overflow: hidden;
-}
-.pitch::before, .pitch::after {
-  content: ""; position: absolute; width: 140px; height: 140px; border-radius: 50%;
-  border: 2px dashed var(--stitch); opacity: .35; pointer-events: none;
-}
+.pitch { background: var(--chalk); color: var(--board-deep); border-radius: 12px; padding: 18px 18px 16px; position: relative; overflow: hidden; }
+.pitch::before, .pitch::after { content: ""; position: absolute; width: 140px; height: 140px; border-radius: 50%; border: 2px dashed var(--stitch); opacity: .35; pointer-events: none; }
 .pitch::before { right: -100px; top: -40px; }
 .pitch::after { left: -110px; bottom: -70px; }
 .pitch .inning { font-size: 13px; font-weight: 900; letter-spacing: .1em; color: var(--stitch); }
-.pitch .kind { display: inline-block; font-size: 12px; font-weight: 900; background: var(--board); color: var(--chalk); border-radius: 4px; padding: 1px 8px; margin-left: 8px; letter-spacing: .05em; }
+.tag { display: inline-block; font-size: 12px; font-weight: 900; background: var(--board); color: var(--chalk); border-radius: 4px; padding: 1px 8px; margin-left: 6px; letter-spacing: .05em; }
+.tag.red { background: var(--stitch); }
 .pitch .subject { font-family: var(--f-display); font-weight: 400; font-size: clamp(24px, 7vw, 34px); line-height: 1.25; margin: 8px 0 0; text-wrap: balance; }
 .pitch .reading { font-size: 14px; font-weight: 700; opacity: .7; }
 .pitch .ask { font-size: 17px; font-weight: 900; margin: 8px 0 0; }
 .hint-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
-.hint-btn { font: inherit; font-size: 13px; font-weight: 700; background: transparent; border: 2px solid var(--board); color: var(--board); border-radius: 999px; padding: 2px 12px; cursor: pointer; }
+.hint-btn { font-size: 13px; font-weight: 700; background: transparent; border: 2px solid var(--board); color: var(--board); border-radius: 999px; padding: 2px 12px; }
 .hint { font-size: 14px; font-weight: 900; color: var(--board); }
 
 .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.choice {
-  font: inherit; cursor: pointer;
-  background: var(--board); color: var(--chalk);
-  border: 2px solid var(--line); border-radius: 10px;
-  padding: 12px 8px; min-height: 76px;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0;
-}
+.choice { background: var(--board); color: var(--chalk); border: 2px solid var(--line); border-radius: 10px; padding: 12px 8px; min-height: 76px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .choice:hover:not(:disabled) { border-color: var(--chalk); }
 .choice b { font-family: var(--f-display); font-weight: 400; font-size: 22px; line-height: 1.3; }
 .choice span { font-size: 12px; font-weight: 700; color: var(--chalk-dim); }
@@ -150,64 +127,60 @@ button:focus-visible { outline: 3px solid var(--lamp); outline-offset: 2px; }
 .choice.right { opacity: 1; background: var(--lamp); color: var(--board-deep); border-color: var(--lamp); }
 .choice.right span { color: var(--board-deep); }
 .choice.wrong { opacity: 1; border-color: var(--stitch); background: #3a2420; }
+@media (max-width: 380px) { .choice b { font-size: 19px; } }
 
-.call {
-  border-radius: 12px; padding: 14px 16px;
-  border: 2px solid var(--line);
-  display: flex; flex-direction: column; gap: 6px;
-}
+.call { border-radius: 12px; padding: 14px 16px; border: 2px solid var(--line); display: flex; flex-direction: column; gap: 8px; }
 .call.hit { border-color: var(--lamp); }
 .call h2 { font-family: var(--f-display); font-weight: 400; font-size: 26px; margin: 0; line-height: 1.2; }
 .call.hit h2 { color: var(--lamp); }
 .call p { margin: 0; font-size: 15px; }
 .call .fact { color: var(--chalk-dim); font-size: 14px; }
+.call .mlb { font-size: 14px; background: var(--board-cell); border-radius: 8px; padding: 6px 10px; }
+.call .mlb b { color: var(--lamp); }
+.meisan { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; font-size: 14px; }
+.meisan em { font-style: normal; font-weight: 900; background: var(--chalk); color: var(--board-deep); border-radius: 999px; padding: 1px 10px; }
 .rare { display: inline-block; font-size: 11px; font-weight: 900; background: var(--stitch); color: var(--chalk); border-radius: 4px; padding: 0 7px; margin-right: 6px; letter-spacing: .05em; }
-.pitch .kind.team { background: var(--stitch); }
-.next {
-  font: inherit; font-family: var(--f-display); font-size: 18px; cursor: pointer;
-  background: var(--chalk); color: var(--board-deep); border: none; border-radius: 10px;
-  padding: 12px; margin-top: 6px; box-shadow: 0 4px 0 var(--dirt);
-}
-.next:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--dirt); }
+
+/* map */
+.map { background: var(--board-cell); border-radius: 10px; padding: 6px; }
+.map svg { display: block; width: 100%; height: auto; max-height: 420px; }
+.map path { fill: var(--land); stroke: var(--board-deep); stroke-width: 2; stroke-linejoin: round; }
+.map path.got { fill: #6f8f5a; }
+.map path.done { fill: var(--dirt); }
+.map path.on { fill: var(--lamp); }
+.map path.miss { fill: var(--stitch); }
+.map .inset { fill: none; stroke: var(--line); stroke-width: 2; stroke-dasharray: 8 6; }
+.map .ring { fill: none; stroke: var(--lamp); stroke-width: 5; }
+.map .ring.pulse { animation: pulse 1.4s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+.map text { font-family: var(--f-body); font-weight: 900; font-size: 44px; fill: var(--chalk); stroke: var(--board-deep); stroke-width: 10px; paint-order: stroke; }
+.map .credit { font-size: 22px; font-weight: 500; fill: var(--chalk-dim); stroke: none; }
+@keyframes pulse { from { transform: scale(.6); opacity: 1; } to { transform: scale(1.6); opacity: 0; } }
 
 .result { text-align: center; display: flex; flex-direction: column; gap: 10px; align-items: center; padding-block: 8px; }
 .result .big { font-family: var(--f-display); font-size: clamp(56px, 18vw, 88px); line-height: 1; color: var(--lamp); }
 .result h2 { font-family: var(--f-display); font-weight: 400; font-size: 24px; margin: 0; }
 .result p { margin: 0; color: var(--chalk-dim); max-width: 32em; }
-.row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-.ghost { font: inherit; font-weight: 700; background: transparent; color: var(--chalk); border: 2px solid var(--line); border-radius: 10px; padding: 10px 16px; cursor: pointer; }
+.result .row { justify-content: center; }
 
 /* stamp book */
 .book-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-.book-head h2 { font-family: var(--f-display); font-weight: 400; font-size: 22px; margin: 0; }
 .book-head .count { font-family: var(--f-display); color: var(--lamp); font-size: 20px; font-variant-numeric: tabular-nums; }
 .region { display: flex; flex-direction: column; gap: 6px; }
 .region h3 { margin: 0; font-size: 13px; font-weight: 900; letter-spacing: .12em; color: var(--chalk-dim); }
-.cells { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; }
-.cell {
-  background: var(--board); border: 1px solid var(--line); border-radius: 8px;
-  padding: 8px 4px; text-align: center; position: relative; min-height: 58px;
-  display: flex; flex-direction: column; justify-content: center;
-}
+.cells { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; }
+.cell { background: var(--board); border: 1px solid var(--line); border-radius: 8px; padding: 8px 4px; text-align: center; position: relative; display: flex; flex-direction: column; justify-content: center; }
 .cell b { font-size: 15px; font-weight: 900; line-height: 1.3; }
-.cell span { font-size: 10px; color: var(--chalk-dim); }
+.cell span { font-size: 10px; color: var(--chalk-dim); line-height: 1.4; }
 .cell.got { background: var(--chalk); color: var(--board-deep); border-color: var(--chalk); }
-.cell.got span { color: var(--board-deep); opacity: .6; }
-.cell.got::after {
-  content: ""; position: absolute; top: -6px; right: -4px; width: 22px; height: 22px; border-radius: 50%;
-  background:
-    radial-gradient(circle at 0 50%, transparent 8px, var(--stitch) 8px, var(--stitch) 9px, transparent 9px),
-    radial-gradient(circle at 100% 50%, transparent 8px, var(--stitch) 8px, var(--stitch) 9px, transparent 9px),
-    #fff;
-  border: 1px solid #d8d3c0;
-  transform: rotate(-20deg);
-}
-.reset { align-self: flex-start; font-size: 13px; padding: 6px 12px; }
-.confirm { font-size: 14px; color: var(--chalk-dim); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.cell.got span { color: var(--board-deep); opacity: .65; }
+.cell.got::after { content: ""; position: absolute; top: -6px; right: -4px; width: 22px; height: 22px; border-radius: 50%;
+  background: radial-gradient(circle at 0 50%, transparent 8px, var(--stitch) 8px, var(--stitch) 9px, transparent 9px), radial-gradient(circle at 100% 50%, transparent 8px, var(--stitch) 8px, var(--stitch) 9px, transparent 9px), #fff;
+  border: 1px solid #d8d3c0; transform: rotate(-20deg); }
+.legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--chalk-dim); }
+.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 4px; }
 
-@media (max-width: 380px) { .choice b { font-size: 19px; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
-@keyframes pop { from { transform: scale(.9); opacity: .4; } to { transform: scale(1); opacity: 1; } }
+@keyframes pop { from { transform: scale(.94); opacity: .4; } to { transform: scale(1); opacity: 1; } }
 .call, .result { animation: pop .18s ease-out; }
 </style>
 <style>*,*::before,*::after{box-sizing:border-box}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
@@ -218,35 +191,13 @@ button:focus-visible { outline: 3px solid var(--lamp); outline-offset: 2px; }
 <div class="wrap">
   <header>
     <h1><small>やきゅうで おぼえる</small>都道府県ベースボール</h1>
-    <div class="tabs" role="tablist">
-      <button class="tab" id="tab-play" role="tab" aria-selected="true">あそぶ</button>
-      <button class="tab" id="tab-book" role="tab" aria-selected="false">スタンプ帳</button>
-    </div>
+    <div class="row" id="head-right"></div>
   </header>
-
-  <section id="view-play" class="wrap" style="gap:18px">
-    <div class="board">
-      <div class="board-scroll">
-        <table>
-          <thead><tr id="board-head"></tr></thead>
-          <tbody><tr id="board-row"></tr></tbody>
-        </table>
-      </div>
-      <div class="board-meta">
-        <div class="lamps">
-          <span>H <i class="lamp" id="lamp-h"></i></span>
-          <span>OUT <i class="lamp" id="lamp-o1"></i><i class="lamp" id="lamp-o2"></i><i class="lamp" id="lamp-o3"></i></span>
-        </div>
-        <div id="board-note">1問せいかいで 1点。9回まで たたかおう！</div>
-      </div>
-    </div>
-    <div id="stage"></div>
-  </section>
-
-  <section id="view-book" class="wrap" style="gap:14px" hidden></section>
+  <main id="app" class="stack"></main>
 </div>
 
 <script>
+
 const PREFS = [
   ["北海道","ほっかいどう","北海道地方"],
   ["青森県","あおもりけん","東北地方"],["岩手県","いわてけん","東北地方"],["宮城県","みやぎけん","東北地方"],["秋田県","あきたけん","東北地方"],["山形県","やまがたけん","東北地方"],["福島県","ふくしまけん","東北地方"],
@@ -400,217 +351,527 @@ const PLAYERS = [
   ["周東佑京","しゅうとううきょう","ソフトバンク","群馬県","群馬県太田市の出身。とても足がはやくて、盗塁王に何回もなっているよ。"]
 ].map(([name, yomi, team, pref, fact, rare]) => ({ kind: "選手", name: name + "選手", sub: team, yomi, pref, fact, rare }));
 
-function schoolQuestion(prefName) {
-  const list = SCHOOLS_RAW[prefName];
-  const [name, yomi, fact, rare] = list[Math.floor(Math.random() * list.length)];
-  return { kind: "高校野球", name: name + "高校", yomi, pref: prefName, fact, rare };
-}
 
+// メジャー経験のあるNPB選手（2026年9月の在籍）
+const NPB_MLB_EXTRA = [
+  ["有原航平","ありはらこうへい","日本ハム","広島県","広島県広島市の出身。高校は広島県の広陵だよ。","レンジャーズで2年間プレー（2021〜2022年）"],
+  ["秋山翔吾","あきやましょうご","広島","神奈川県","神奈川県横須賀市の出身。西武時代に1シーズン216本のヒットを打った記録をもっているよ。","レッズで2年間プレー（2020〜2021年）"],
+  ["平野佳寿","ひらのよしひさ","オリックス","京都府","京都府宇治市の出身。日本とアメリカあわせて、とてもたくさんのセーブをあげたリリーフ投手だよ。","ダイヤモンドバックスとマリナーズで投げた（2018〜2020年）"],
+  ["上沢直之","うわさわなおゆき","ソフトバンク","千葉県","千葉県松戸市の出身。高校は地元千葉県の専大松戸だよ。","2024年にレッドソックスで投げた"],
+  ["小笠原慎之介","おがさわらしんのすけ","巨人","神奈川県","神奈川県の出身。東海大相模のエースとして2015年夏の甲子園で優勝したよ。","ナショナルズで投げてから、2026年に日本へもどって巨人に入った"]
+].map(([name, yomi, team, pref, fact, mlb]) => ({ kind: "選手", name: name + "選手", sub: team, yomi, pref, fact, mlb }));
+
+// メジャーリーグでプレーした日本人選手（now=2026年にメジャー在籍, npb=今は日本の球団, past=引退など）
+// [名前, よみ, 出身, 状態, 今のチーム, 出身高校, 日本で最初のチーム, メジャーで最初のチーム, 道のり, ひとこと, びっくり]
+const CAREER = [
+  ["大谷翔平","おおたにしょうへい","岩手県","now","ドジャース","花巻東","日本ハム","エンゼルス",["花巻東高校","日本ハム","エンゼルス","ドジャース"],"2024年にメジャーではじめて「50本塁打・50盗塁」を達成！投げても打ってもすごい二刀流だよ。",1],
+  ["山本由伸","やまもとよしのぶ","岡山県","now","ドジャース","都城","オリックス","ドジャース",["都城高校（宮崎県）","オリックス","ドジャース"],"2025年のワールドシリーズでMVPにえらばれたエースだよ。",1],
+  ["佐々木朗希","ささきろうき","岩手県","now","ドジャース","大船渡","ロッテ","ドジャース",["大船渡高校","ロッテ","ドジャース"],"ロッテ時代の2022年に完全試合！13人つづけて三振をとったよ。",1],
+  ["鈴木誠也","すずきせいや","東京都","now","カブス","二松学舎大付","広島","カブス",["二松学舎大付高校","広島","カブス"],"広島カープで首位打者になってからメジャーへ。カブスで長打を打ちまくっているよ。"],
+  ["今永昇太","いまながしょうた","福岡県","now","カブス","北筑","DeNA","カブス",["北筑高校","DeNA","カブス"],"メジャー1年目の2024年から大活やく。話し上手で英語のスピーチも人気だよ。"],
+  ["千賀滉大","せんがこうだい","愛知県","now","メッツ","蒲郡","ソフトバンク","メッツ",["蒲郡高校","ソフトバンク","メッツ"],"背番号が3ケタの育成選手からスタートして、メジャーまで行ったよ！",1],
+  ["吉田正尚","よしだまさたか","福井県","now","レッドソックス","敦賀気比","オリックス","レッドソックス",["敦賀気比高校","オリックス","レッドソックス"],"体は大きくないのにパワーがすごいバッター。2023年のWBCでも大活やくしたよ。"],
+  ["松井裕樹","まついゆうき","神奈川県","now","パドレス","桐光学園","楽天","パドレス",["桐光学園高校","楽天","パドレス"],"高校2年の夏、甲子園の1試合で22個の三振をとる大会記録をつくったよ！",1],
+  ["菅野智之","すがのともゆき","神奈川県","now","ロッキーズ","東海大相模","巨人","オリオールズ",["東海大相模高校","巨人","オリオールズ","ロッキーズ"],"巨人のエースとして活やくして、35才でメジャーにちょうせんしたよ。"],
+  ["今井達也","いまいたつや","栃木県","now","アストロズ","作新学院","西武","アストロズ",["作新学院高校","西武","アストロズ"],"作新学院のエースとして2016年夏の甲子園で優勝したよ！",1],
+  ["菊池雄星","きくちゆうせい","岩手県","now","エンゼルス","花巻東","西武","マリナーズ",["花巻東高校","西武","マリナーズ","ブルージェイズ","アストロズ","エンゼルス"],"花巻東で大谷翔平選手の3年先輩。メジャーで4つのチームでプレーしたよ。"],
+  ["村上宗隆","むらかみむねたか","熊本県","now","ホワイトソックス","九州学院","ヤクルト","ホワイトソックス",["九州学院高校","ヤクルト","ホワイトソックス"],"ヤクルト時代の2022年に、日本選手最多のシーズン56本塁打で三冠王！",1],
+  ["岡本和真","おかもとかずま","奈良県","now","ブルージェイズ","智弁学園","巨人","ブルージェイズ",["智弁学園高校","巨人","ブルージェイズ"],"巨人の4番バッターとしてホームラン王に3回なったよ。"],
+  ["ダルビッシュ有","だるびっしゅゆう","大阪府","past","","東北","日本ハム","レンジャーズ",["東北高校（宮城県）","日本ハム","レンジャーズ","ドジャース","カブス","パドレス"],"東北高校で甲子園ノーヒットノーラン。メジャーで長く活やくした、変化球がとても多い投手だよ。"],
+  ["田中将大","たなかまさひろ","兵庫県","npb","巨人","駒大苫小牧","楽天","ヤンキース",["駒大苫小牧高校（北海道）","楽天","ヤンキース","楽天","巨人"],"楽天で2013年に24勝0敗！そのあとヤンキースで7年間投げたよ。",1],
+  ["藤浪晋太郎","ふじなみしんたろう","大阪府","npb","DeNA","大阪桐蔭","阪神","アスレチックス",["大阪桐蔭高校","阪神","アスレチックス","オリオールズ","DeNA"],"大阪桐蔭で2012年に春夏連覇したエース。メジャーでも投げたよ。"],
+  ["筒香嘉智","つつごうよしとも","和歌山県","npb","DeNA","横浜","DeNA（横浜）","レイズ",["横浜高校","DeNA","レイズ","ドジャース","パイレーツ","DeNA"],"DeNAのキャプテンからメジャーへ。いまはまたDeNAでプレーしているよ。"],
+  ["有原航平","ありはらこうへい","広島県","npb","日本ハム","広陵","日本ハム","レンジャーズ",["広陵高校","日本ハム","レンジャーズ","ソフトバンク","日本ハム"],"レンジャーズで2年間投げて、日本にもどってからも大活やくしているよ。"],
+  ["秋山翔吾","あきやましょうご","神奈川県","npb","広島","横浜創学館","西武","レッズ",["横浜創学館高校","西武","レッズ","広島"],"西武時代に1シーズン216本のヒットを打った記録をもっているよ。",1],
+  ["平野佳寿","ひらのよしひさ","京都府","npb","オリックス","鳥羽","オリックス","ダイヤモンドバックス",["鳥羽高校（京都府）","オリックス","ダイヤモンドバックス","マリナーズ","オリックス"],"日本とアメリカあわせて、とてもたくさんのセーブをあげたリリーフ投手だよ。"],
+  ["上沢直之","うわさわなおゆき","千葉県","npb","ソフトバンク","専大松戸","日本ハム","レッドソックス",["専大松戸高校","日本ハム","レッドソックス","ソフトバンク"],"2024年にレッドソックスで投げてから、日本にもどったよ。"],
+  ["小笠原慎之介","おがさわらしんのすけ","神奈川県","npb","巨人","東海大相模","中日","ナショナルズ",["東海大相模高校","中日","ナショナルズ","巨人"],"東海大相模のエースとして2015年夏の甲子園で優勝したよ。"],
+  ["野茂英雄","のもひでお","大阪府","past","","成城工業","近鉄","ドジャース",["成城工業高校","近鉄","ドジャース","メッツなど"],"1995年にメジャーへ。体をひねる「トルネード投法」で大人気になり、日本人がメジャーで活やくする道をひらいたよ。ノーヒットノーランを2回！",1],
+  ["イチロー","いちろー","愛知県","past","","愛工大名電","オリックス","マリナーズ",["愛工大名電高校","オリックス","マリナーズ","ヤンキース","マーリンズ","マリナーズ"],"2004年にメジャー記録のシーズン262安打！メジャー通算3000安打もこえて、アメリカの野球殿堂にも入ったよ。",1],
+  ["佐々木主浩","ささきかずひろ","宮城県","past","","東北","横浜（大洋）","マリナーズ",["東北高校","横浜","マリナーズ","横浜"],"「大魔神」とよばれたストッパー。2000年にマリナーズで新人王になったよ。",1],
+  ["井口資仁","いぐちただひと","東京都","past","","國學院久我山","ダイエー","ホワイトソックス",["國學院久我山高校","ダイエー","ホワイトソックス","フィリーズなど","ロッテ"],"2005年にホワイトソックスでワールドシリーズ優勝。のちにロッテの監督もしたよ。"],
+  ["田口壮","たぐちそう","兵庫県","past","","西宮北","オリックス","カージナルス",["西宮北高校","オリックス","カージナルス","フィリーズ","カブス","オリックス"],"カージナルスとフィリーズで、2回もワールドシリーズ優勝をけいけんしたよ。",1],
+  ["松井秀喜","まついひでき","石川県","past","","星稜","巨人","ヤンキース",["星稜高校","巨人","ヤンキース","エンゼルスなど"],"「ゴジラ」とよばれた長距離バッター。2009年にヤンキースでワールドシリーズMVP！",1],
+  ["松坂大輔","まつざかだいすけ","東京都","past","","横浜","西武","レッドソックス",["横浜高校","西武","レッドソックス","メッツ","ソフトバンクなど"],"横浜高校で1998年に春夏連覇、決勝でノーヒットノーラン。2007年にレッドソックスでワールドシリーズ優勝！",1],
+  ["黒田博樹","くろだひろき","大阪府","past","","上宮","広島","ドジャース",["上宮高校","広島","ドジャース","ヤンキース","広島"],"メジャーで活やくしたあと広島にもどり、2016年のリーグ優勝に力をかしたよ。"],
+  ["上原浩治","うえはらこうじ","大阪府","past","","東海大仰星","巨人","オリオールズ",["東海大仰星高校","巨人","オリオールズ","レンジャーズ","レッドソックス","カブス","巨人"],"2013年にレッドソックスのストッパーとして、ワールドシリーズ優勝の最後のアウトをとったよ！",1],
+  ["岩隈久志","いわくまひさし","東京都","past","","堀越","近鉄","マリナーズ",["堀越高校","近鉄","楽天","マリナーズ"],"2015年にマリナーズでノーヒットノーランを達成したよ。"],
+  ["新庄剛志","しんじょうつよし","福岡県","past","","西日本短大付","阪神","メッツ",["西日本短大付高校","阪神","メッツ","ジャイアンツ","日本ハム"],"ジャイアンツで、日本人として初めてワールドシリーズに出場。のちに日本ハムの監督になったよ。",1],
+  ["城島健司","じょうじまけんじ","長崎県","past","","別府大付","ダイエー","マリナーズ",["別府大付高校（大分県）","ダイエー","マリナーズ","阪神"],"日本人で初めて、メジャーのレギュラーキャッチャーとして活やくしたよ。",1],
+  ["松井稼頭央","まついかずお","大阪府","past","","PL学園","西武","メッツ",["PL学園高校","西武","メッツ","ロッキーズ","アストロズ","楽天"],"足のはやいスイッチヒッター。のちに西武の監督もしたよ。"],
+  ["青木宣親","あおきのりちか","宮崎県","past","","日向","ヤクルト","ブルワーズ",["日向高校","ヤクルト","ブルワーズ","ロイヤルズなど7球団","ヤクルト"],"メジャーで7つのチームをわたりあるいた、ヒットを打つ名人だよ。",1],
+  ["川崎宗則","かわさきむねのり","鹿児島県","past","","鹿児島工業","ダイエー","マリナーズ",["鹿児島工業高校","ダイエー（ソフトバンク）","マリナーズ","ブルージェイズ","カブス"],"明るいキャラクターで、アメリカのファンにも大人気だったよ。"],
+  ["福留孝介","ふくどめこうすけ","鹿児島県","past","","PL学園","中日","カブス",["PL学園高校","中日","カブス","インディアンス","ホワイトソックス","阪神","中日"],"カブスなどでプレーし、日本にもどって阪神・中日でも活やくしたよ。"],
+  ["長谷川滋利","はせがわしげとし","兵庫県","past","","東洋大姫路","オリックス","エンゼルス",["東洋大姫路高校","オリックス","エンゼルス","マリナーズ"],"エンゼルスとマリナーズで活やくしたリリーフ投手だよ。"],
+  ["斎藤隆","さいとうたかし","宮城県","past","","東北","横浜（大洋）","ドジャース",["東北高校","横浜","ドジャース","レッドソックスなど","楽天"],"36才でメジャーにちょうせんして、ドジャースのストッパーになったよ。",1],
+  ["前田健太","まえだけんた","大阪府","past","","PL学園","広島","ドジャース",["PL学園高校","広島","ドジャース","ツインズ","タイガース"],"広島のエースからメジャーへ。ドジャースやツインズで長く投げたよ。"]
+].map(([name, yomi, pref, status, now, school, npb, mlb, path, fact, rare]) => ({ name: name + "選手", yomi, pref, status, now, school, npb, mlb, path, fact, rare }));
+PLAYERS.push(...NPB_MLB_EXTRA);
+CAREER.forEach(c => { const p = PLAYERS.find(x => x.name === c.name); if (p) p.mlb = c.path.join(" → "); });
+const NPB_TEAMS = ["巨人","ヤクルト","DeNA","中日","阪神","広島","日本ハム","楽天","西武","ロッテ","オリックス","ソフトバンク","近鉄","ダイエー"];
+const MLB_TEAMS = [...new Set(CAREER.map(c => c.mlb).concat(["ヤンキース","レッドソックス","ドジャース","エンゼルス","マリナーズ","カブス","メッツ","パドレス","ジャイアンツ","ブレーブス","アストロズ","レンジャーズ"]))];
+const SCHOOL_POOL = [...new Set(CAREER.map(c => c.school))];
+
+// 都道府県の名産
+const MEISAN = {
+  "北海道":["じゃがいも","とうもろこし"],"青森県":["りんご","にんにく"],"岩手県":["わんこそば","南部鉄器"],"宮城県":["牛たん","ずんだもち"],
+  "秋田県":["きりたんぽ","稲庭うどん"],"山形県":["さくらんぼ","将棋のこま"],"福島県":["もも","赤べこ"],
+  "茨城県":["納豆","メロン"],"栃木県":["いちご","ぎょうざ"],"群馬県":["こんにゃく","だるま"],"埼玉県":["草加せんべい","深谷ねぎ"],
+  "千葉県":["落花生","しょうゆ"],"東京都":["もんじゃ焼き","江戸切子"],"神奈川県":["シウマイ","かまぼこ"],
+  "新潟県":["お米（コシヒカリ）","笹だんご"],"富山県":["ほたるいか","ますずし"],"石川県":["金ぱく","輪島塗"],"福井県":["めがね","越前がに"],
+  "山梨県":["ぶどう","ほうとう"],"長野県":["信州そば","野沢菜"],"岐阜県":["関の刃物","飛騨牛"],"静岡県":["お茶","うなぎ"],"愛知県":["みそかつ","ういろう"],
+  "三重県":["伊勢えび","松阪牛"],"滋賀県":["近江牛","信楽焼のたぬき"],"京都府":["八つ橋","宇治の抹茶"],"大阪府":["たこ焼き","串かつ"],
+  "兵庫県":["神戸牛","明石焼き"],"奈良県":["柿","奈良漬"],"和歌山県":["みかん","梅ぼし"],
+  "鳥取県":["二十世紀なし","らっきょう"],"島根県":["しじみ","出雲そば"],"岡山県":["白桃（もも）","きびだんご"],"広島県":["かき","広島風お好み焼き"],"山口県":["ふぐ","夏みかん"],
+  "徳島県":["すだち","なると金時"],"香川県":["うどん","オリーブ"],"愛媛県":["いよかん","今治タオル"],"高知県":["かつおのたたき","ゆず"],
+  "福岡県":["明太子","とんこつラーメン"],"佐賀県":["有田焼","のり"],"長崎県":["カステラ","ちゃんぽん"],"熊本県":["からしれんこん","デコポン"],
+  "大分県":["かぼす","しいたけ"],"宮崎県":["マンゴー","チキン南蛮"],"鹿児島県":["さつまいも","黒ぶた"],"沖縄県":["ゴーヤー","サーターアンダギー"]
+};
+
+
+const MAP = {"w":1202,"h":1086,"paths":{"京都府":"M523,607L518,609L515,604L515,600L518,600L526,595L532,593L537,598L536,600L535,599L531,605L531,607L534,603L535,606L533,607L538,608L537,612L538,610L540,611L541,610L541,608L538,609L538,606L542,605L544,603L544,605L545,606L543,608L545,609L544,611L547,614L547,617L560,619L562,623L563,622L562,626L563,632L561,637L562,640L564,643L564,646L565,647L567,646L568,648L570,649L573,655L572,657L568,654L567,655L567,654L565,657L558,656L557,653L558,651L555,646L553,644L551,644L551,641L550,641L549,643L550,644L548,644L545,643L546,640L540,639L540,632L535,631L535,629L531,629L531,627L529,626L529,624L527,623L525,625L524,624L518,621L518,615L521,616L524,615Z","佐賀県":"M281,731L292,731L298,734L299,736L302,733L305,733L305,739L302,739L301,744L300,742L299,744L298,744L297,746L296,747L296,751L293,751L291,747L289,747L290,750L286,753L285,752L284,753L286,754L290,762L283,761L279,758L275,754L277,752L276,750L271,749L270,746L267,742L269,739L272,742L270,739L272,739L272,735L270,735L268,732L270,730L271,733L272,732L271,731L270,728L272,729L271,726L273,728L274,726L277,728L276,731L277,730L277,732L280,733Z","熊本県":"M333,748L340,761L340,767L343,769L340,770L336,779L335,779L333,781L333,784L330,784L328,787L328,793L333,800L331,802L330,802L330,804L332,807L333,810L328,809L326,812L323,811L320,813L316,814L313,813L308,808L307,810L300,813L296,809L298,805L300,805L301,802L302,802L303,801L302,800L304,798L303,798L307,793L305,790L307,789L305,787L311,781L301,783L301,781L308,777L308,774L309,772L307,769L304,768L304,766L300,764L299,759L304,759L303,756L307,753L311,753L312,749L327,758L329,754L326,751L327,748ZM296,795L296,794L295,796L292,795L290,796L291,794L289,794L288,796L290,796L290,797L289,800L287,801L288,799L287,799L286,802L287,802L283,804L284,806L283,805L283,807L281,808L280,806L279,808L279,804L277,805L280,802L280,803L280,802L281,801L282,803L282,801L279,801L278,798L281,790L280,788L280,787L281,789L285,786L288,786L289,792L294,788L297,788L298,789L301,788L298,796L296,797Z","香川県":"M489,666L491,666L490,673L489,672L487,673L488,672L488,671L484,674L484,671L480,671L482,670L481,668ZM480,690L479,692L476,692L473,695L469,692L462,695L459,698L454,697L456,694L456,688L452,684L455,685L457,685L457,686L462,681L463,682L465,680L464,678L466,678L465,680L467,679L468,676L476,679L478,676L479,678L480,675L481,676L481,680L482,680L482,678L483,678L483,677L484,679L485,678L485,682L490,684L492,684L494,687L494,689L486,688Z","愛知県":"M617,614L618,614L618,615L621,618L623,622L627,622L628,624L634,622L640,626L646,622L645,624L647,628L652,625L656,627L659,627L658,628L659,630L657,631L658,633L654,637L653,641L651,643L650,646L642,651L642,659L620,665L622,660L624,661L625,660L630,659L631,657L631,658L632,656L632,659L634,658L634,656L636,656L634,655L634,652L632,651L629,650L627,654L627,652L620,653L619,650L616,650L618,642L617,647L615,648L615,653L617,658L611,654L612,649L610,646L610,641L612,639L612,636L614,634L612,634L611,637L610,634L611,638L610,638L609,636L609,638L608,638L606,634L603,631L603,625L608,617L611,618L615,617Z","栃木県":"M762,510L769,512L774,516L774,518L776,518L777,534L778,537L775,538L777,548L773,556L771,554L768,555L766,557L763,557L763,558L760,559L760,561L758,560L757,561L756,565L751,567L748,567L747,565L746,563L738,563L733,556L737,552L737,546L739,544L738,543L735,543L732,541L734,535L733,533L736,530L733,528L733,527L738,521L742,520L754,514L756,514L755,512L757,511Z","山梨県":"M685,581L689,583L689,585L696,584L697,587L700,587L703,585L711,589L713,588L717,596L722,599L721,608L714,612L712,616L709,616L700,618L700,616L697,616L696,613L694,613L692,621L693,627L691,629L687,627L685,620L680,620L679,617L680,608L676,597L679,594L676,592L679,586L681,588Z","滋賀県":"M578,598L584,600L584,602L586,602L586,607L587,607L588,606L590,608L589,610L591,611L590,614L592,616L590,617L588,625L592,630L590,641L588,645L582,648L576,645L574,647L576,648L574,649L574,651L572,652L570,649L568,648L567,646L565,647L564,646L564,643L562,640L561,637L563,632L562,626L563,622L562,623L559,619L561,615L565,615L567,608L569,610L571,608L575,608L576,604L578,606L577,599Z","群馬県":"M698,555L696,554L691,555L687,553L688,544L690,541L693,540L692,538L702,535L702,534L706,535L707,533L707,530L712,529L712,526L715,526L714,520L718,520L720,516L728,524L735,525L733,528L736,530L733,533L734,535L732,541L735,543L739,543L739,544L737,546L736,550L734,557L738,563L741,562L747,563L748,567L746,568L744,567L738,568L733,564L732,566L722,562L718,572L714,572L713,574L709,575L708,577L704,577L702,580L698,578L699,572L695,569L698,569L696,563L699,561Z","宮城県":"M836,401L838,399L844,401L846,407L844,405L842,407L841,405L842,410L838,413L839,415L840,415L840,418L838,416L837,419L834,419L834,421L839,421L838,423L835,425L837,427L839,427L839,430L836,428L837,431L836,432L838,432L835,433L836,436L837,434L838,436L839,435L836,437L839,439L838,443L835,440L836,440L835,438L833,439L835,437L834,437L834,435L831,436L830,435L826,434L821,438L822,440L820,440L819,437L817,436L814,440L817,440L817,442L813,443L815,444L813,446L810,452L809,460L810,466L806,466L806,472L802,471L803,473L800,472L798,470L798,466L792,464L788,465L787,463L784,461L781,462L778,461L778,456L782,456L785,454L788,449L787,443L792,436L792,433L794,432L792,429L792,425L790,421L791,420L794,421L795,418L794,416L796,413L791,408L791,406L792,407L795,406L801,402L804,402L812,407L820,407L818,410L824,414L828,410L832,411L833,413L834,412L835,407L837,404Z","静岡県":"M678,601L680,608L679,617L679,620L681,621L683,620L685,620L687,627L689,629L691,629L693,627L692,621L693,620L693,615L696,613L697,616L700,616L700,618L716,616L717,620L715,625L717,630L721,631L719,636L721,637L720,641L723,642L723,646L720,648L718,653L716,655L715,660L714,660L714,659L708,663L703,658L703,656L705,654L704,650L705,648L704,646L706,645L704,642L706,638L710,638L711,636L706,632L700,631L694,633L691,638L692,640L692,638L693,639L692,640L685,644L682,653L678,656L677,659L678,664L670,660L662,659L658,661L655,659L642,659L642,651L650,646L651,643L653,641L654,637L658,633L659,627L674,617L673,612L675,611L674,606L675,604L676,605Z","茨城県":"M792,523L794,525L802,527L804,530L801,532L799,540L794,550L795,556L792,561L792,564L794,576L798,583L796,584L797,586L798,586L797,585L799,584L806,595L801,592L798,589L795,588L789,582L788,584L789,585L787,584L780,588L772,589L765,585L761,583L754,573L753,574L751,574L749,567L756,565L757,561L758,560L760,561L760,559L763,558L763,557L774,555L775,551L777,548L775,538L778,537L777,534L777,524L779,524L782,526L783,529L787,532L790,528L793,527Z","沖縄県":"M355,184L355,182L357,181L361,176L363,169L366,172L367,172L368,175L368,182L361,192L355,193L355,196L353,195L355,198L354,200L350,202L346,199L347,203L343,204L343,207L339,208L339,211L333,209L330,212L333,216L334,220L336,221L337,224L335,224L332,220L330,221L331,223L328,224L329,226L326,231L325,234L324,233L326,236L329,235L330,237L327,240L318,246L316,245L317,240L316,240L316,239L317,238L316,238L316,236L315,236L315,234L316,232L318,233L318,229L318,230L320,227L322,227L324,225L320,211L322,212L325,210L327,211L331,207L331,205L333,204L334,205L341,199L341,197L337,194L335,195L334,185L335,186L339,185L343,187L342,191L345,193L352,189L353,190L351,188ZM244,220L243,218L248,216L252,219L250,222L251,225L248,224L247,220ZM134,377L130,374L130,372L130,371L130,373L132,373L130,369L132,367L131,365L133,365L131,360L130,358L131,358L133,361L136,368L143,372L146,376L145,375L139,375ZM46,414L41,410L43,406L42,404L39,405L38,404L38,402L41,402L41,399L43,400L43,403L44,402L49,402L50,401L50,397L52,395L54,397L55,393L54,392L56,387L58,387L58,389L54,398L52,400L52,411L51,412L48,411ZM22,421L11,416L10,418L8,418L6,416L8,415L8,413L10,415L9,412L13,415L13,406L15,403L18,408L19,406L21,407L22,406L28,410L27,415L25,414L24,416L25,419L23,418Z","山形県":"M758,392L764,393L767,391L767,394L772,396L774,396L775,398L782,398L783,400L786,401L787,404L790,405L794,412L796,413L794,416L795,418L794,421L791,420L790,421L792,425L792,429L794,432L792,433L792,436L787,443L788,449L785,454L782,456L778,456L777,469L779,471L776,475L772,474L771,475L767,473L764,474L761,470L755,471L754,470L752,470L751,468L748,468L746,464L748,457L749,456L748,455L750,447L754,448L760,443L757,439L750,436L751,430L742,426L746,418L752,413L756,402Z","和歌山県":"M547,678L553,676L554,683L556,683L557,686L556,687L553,687L553,688L548,694L548,695L552,700L551,705L552,707L555,705L563,706L563,710L567,715L571,716L569,720L567,721L568,722L567,723L568,725L560,730L560,733L558,733L559,730L550,730L543,726L541,724L541,721L538,719L538,718L540,718L541,716L533,712L529,706L524,707L526,705L525,704L527,702L525,701L530,698L526,695L527,692L529,693L528,691L532,690L531,690L530,688L528,688L528,686L526,685L528,686L527,685L525,684L526,681L528,683L532,682L532,681L535,680L536,681L538,679L541,680L545,678L546,679Z","長崎県":"M249,674L248,673L249,675L247,676L250,675L248,677L250,678L248,679L250,679L248,679L249,681L248,682L246,680L248,680L248,677L246,677L245,679L245,676L244,676L244,679L242,678L243,677L244,673L245,673L246,672L244,672L244,671L245,668L247,667L244,666L246,660L250,661L250,659L251,659L251,658L253,657L254,659L253,660L254,661L253,662L252,662L254,664L253,666L248,672ZM241,694L241,693L238,693L240,681L241,680L241,682L244,681L244,683L243,680L245,681L245,683L247,681L248,683L246,684L246,686L244,687L244,692ZM265,717L263,714L262,714L262,713L264,714L262,711L264,711L263,709L264,708L268,709L266,711L269,712L267,713L269,714L269,715L266,715ZM249,749L247,747L250,749L249,746L252,745L250,744L252,742L252,739L255,738L255,736L256,738L256,737L257,737L256,735L257,735L258,738L255,740L256,741L254,742L255,744L253,746ZM261,738L263,735L263,738L269,737L267,742L270,745L270,748L274,750L276,750L277,752L275,754L276,755L283,761L289,762L289,764L283,768L285,767L285,769L288,769L291,767L294,767L297,772L296,779L292,780L290,783L288,783L287,784L287,782L285,781L285,778L287,778L289,775L288,772L283,772L280,774L276,774L274,780L271,781L268,785L266,785L270,780L270,778L269,778L270,777L271,778L273,775L270,776L271,775L270,775L268,770L266,771L264,768L262,764L261,764L261,761L262,759L262,757L263,753L266,755L266,757L267,756L266,759L268,760L267,758L270,760L270,764L268,762L268,765L270,766L269,767L272,770L273,766L278,769L279,769L276,764L276,759L273,756L270,757L271,756L268,755L268,753L268,756L266,756L266,753L268,751L266,752L266,750L264,750L265,752L263,753L262,752L264,751L261,749L262,748L261,746L261,748L260,746L260,747L260,746L257,746L258,743L261,741L258,740L258,737ZM233,770L232,765L234,765L232,764L232,762L231,764L230,763L231,761L233,762L232,758L234,757L235,758L234,756L236,754L236,750L234,760L238,759L239,761L237,763L235,762L234,766L235,768L234,768ZM219,785L218,783L213,784L211,783L212,781L213,783L214,782L213,782L215,779L213,779L213,773L216,773L215,775L218,775L219,773L220,775L220,774L219,774L221,772L222,774L221,774L223,774L223,778L225,780L219,781L220,783Z","秋田県":"M807,309L806,313L812,314L813,318L811,318L810,326L806,329L807,333L805,335L805,341L807,347L802,347L802,350L806,352L802,355L804,358L804,360L803,363L800,365L800,371L798,372L796,376L799,379L798,381L799,383L803,385L802,388L804,389L801,391L802,392L801,394L804,396L802,399L802,402L795,406L792,407L787,404L786,401L783,400L782,398L779,398L774,397L774,396L772,396L767,394L767,391L764,393L758,392L760,383L763,382L766,374L767,364L767,353L764,348L760,345L758,346L757,348L752,348L749,340L755,342L759,339L762,334L764,327L765,326L766,319L761,314L765,314L765,312L768,311L770,313L779,313L783,310L786,311L786,312L790,314L791,315L792,315L791,314L793,313L796,315L798,314L800,314L800,313L803,312L804,310Z","岡山県":"M474,618L473,621L480,622L481,629L486,627L489,627L492,624L492,627L493,630L491,630L488,637L486,638L487,640L485,643L487,645L485,648L488,651L489,656L486,655L485,656L482,655L484,656L483,657L484,656L485,658L479,664L473,663L470,664L471,664L474,664L475,665L473,667L473,669L471,668L470,672L469,672L465,671L464,672L464,674L463,673L460,668L459,670L461,671L459,671L458,667L458,669L456,668L454,670L454,671L451,672L448,669L450,671L448,673L448,671L446,671L446,666L443,662L444,659L442,655L443,651L439,646L440,639L438,636L439,633L444,632L444,628L450,628L449,625L452,625L454,619L461,620L465,624L470,619Z","福岡県":"M312,704L313,703L315,704L316,703L316,704L318,704L318,705L315,707L318,706L318,707L319,704L320,704L320,705L321,704L321,706L322,706L326,702L328,702L327,708L325,710L328,711L327,712L328,713L328,714L332,722L336,722L337,727L336,729L326,729L322,733L322,737L319,739L321,743L319,745L322,748L320,753L312,749L311,753L307,753L303,756L304,759L299,759L299,755L296,751L295,747L298,744L299,744L300,742L301,744L302,739L305,739L305,733L302,733L299,736L298,734L292,731L281,731L281,730L285,729L286,727L287,726L284,727L285,725L283,724L286,724L289,719L290,722L292,723L292,724L298,723L300,718L296,721L294,720L293,718L294,720L298,718L302,714L300,710L302,710L302,708L304,708L304,706L310,706Z","岐阜県":"M622,557L626,552L629,554L631,552L634,552L634,554L638,552L638,554L643,554L647,556L650,559L650,561L647,566L648,569L646,571L646,573L648,575L648,579L642,586L637,586L634,590L641,594L645,600L644,603L646,604L647,607L649,609L649,611L648,613L650,616L647,615L648,620L646,621L646,622L644,622L640,626L634,622L628,624L627,622L623,622L621,619L618,615L618,614L615,617L611,618L608,617L603,625L603,631L602,630L602,631L600,630L596,624L590,626L588,625L590,617L592,616L590,614L591,611L589,610L590,609L588,606L587,607L586,607L586,602L584,602L584,600L586,596L586,593L588,592L594,593L595,594L596,592L608,591L611,588L610,586L605,580L606,576L607,575L607,570L612,565L609,562L611,561L612,557L613,559L614,558L616,559L618,563L621,560Z","青森県":"M802,267L805,254L808,250L809,247L813,250L818,252L826,258L831,257L835,254L832,269L832,284L834,298L837,307L841,307L846,312L841,315L839,318L834,317L830,320L828,317L823,320L820,321L818,322L818,324L813,326L810,324L811,318L813,318L812,314L806,313L807,309L804,310L803,312L800,313L800,314L798,314L796,315L793,313L791,314L792,316L788,312L786,312L786,311L782,311L779,313L770,313L768,311L765,312L765,314L761,314L762,306L760,304L758,304L758,303L761,301L764,295L767,293L770,295L776,291L779,284L780,274L776,271L780,271L781,264L787,268L791,266L796,268L796,282L798,287L800,290L803,289L806,287L807,283L805,282L807,279L810,280L812,282L812,283L816,285L818,287L821,286L824,281L826,270L824,264L821,263L820,265L816,268L812,267L804,272L802,271Z","大阪府":"M540,637L540,639L546,640L545,643L548,644L550,644L549,643L550,641L551,641L551,644L553,644L558,651L556,653L553,663L555,664L553,667L554,668L554,675L546,679L545,678L541,680L538,679L536,681L535,680L532,681L531,683L527,683L526,680L532,679L540,671L540,668L541,669L543,666L542,666L541,663L542,665L542,664L544,666L544,664L542,664L544,661L542,660L542,658L541,658L544,655L542,650L543,646L542,645L544,644L538,642L539,638L538,637Z","長野県":"M693,518L695,518L696,520L696,525L701,528L700,533L701,535L692,538L693,540L690,541L687,548L687,553L691,555L696,554L699,555L699,561L696,563L698,569L695,569L699,572L698,578L702,580L703,584L700,587L697,587L696,584L689,585L689,583L685,581L681,588L679,586L676,592L679,594L676,597L678,601L676,605L675,604L674,606L675,611L673,612L674,617L662,624L661,626L656,627L653,626L647,627L645,624L646,621L648,619L647,615L650,616L648,613L649,611L649,609L647,607L646,604L644,603L645,600L641,594L637,591L635,592L635,589L637,586L642,586L648,579L648,575L646,573L646,571L648,569L647,566L650,561L650,559L647,556L650,554L651,549L653,548L652,546L655,544L655,534L661,527L661,524L668,525L669,527L667,530L670,531L672,529L678,527L681,529L682,525L684,524L686,520Z","大分県":"M354,719L358,718L361,721L363,726L363,732L362,735L358,734L359,736L356,737L356,739L352,738L352,743L356,745L361,743L364,745L371,743L366,752L368,752L371,751L372,752L369,754L372,755L373,754L375,756L376,754L377,756L373,756L371,760L374,763L376,762L376,764L378,762L380,763L377,764L376,765L375,764L375,766L377,766L373,769L374,770L375,769L376,770L373,772L371,771L370,775L368,775L369,770L365,769L363,769L362,773L354,774L350,769L345,771L340,767L340,761L336,754L335,751L332,748L327,748L326,751L329,754L327,758L320,754L322,748L319,745L321,743L319,739L322,737L324,731L329,728L336,729L336,722L339,723L341,725L348,725L352,719Z","三重県":"M596,624L600,630L602,631L602,630L606,634L608,638L606,637L602,640L601,642L602,643L596,655L596,659L597,659L596,663L601,664L602,666L610,669L610,670L610,669L611,671L613,671L613,674L614,672L615,675L614,677L613,676L612,678L610,677L612,678L612,679L614,678L613,679L614,683L611,685L607,683L612,684L610,683L611,682L612,682L610,681L611,681L609,681L610,680L609,682L607,680L607,682L605,681L604,682L606,679L604,678L603,680L604,679L602,679L603,680L601,681L603,680L602,682L600,684L598,683L599,682L597,682L597,684L596,683L596,684L594,683L595,685L594,684L594,685L595,686L594,686L593,684L592,684L592,686L589,686L588,688L587,687L584,690L584,692L586,692L585,694L582,694L583,692L580,695L582,696L582,697L584,698L582,698L583,699L583,701L582,701L582,700L580,699L580,701L581,701L581,703L579,703L579,705L578,704L577,706L574,707L571,716L567,715L563,710L563,708L565,707L565,704L567,704L567,703L569,704L569,701L571,701L570,699L571,697L575,698L575,688L576,684L575,681L576,680L574,676L575,673L580,672L581,670L581,668L578,668L578,666L576,667L573,665L574,661L572,660L573,660L574,659L571,652L575,651L574,649L576,648L574,647L576,645L582,648L588,645L592,636L592,630L590,628L590,626Z","広島県":"M418,634L419,633L422,635L424,633L426,635L437,635L440,639L439,645L443,651L442,655L444,659L443,662L446,667L446,673L444,671L446,673L443,674L442,677L438,675L436,676L438,675L437,673L436,675L431,676L429,676L428,679L426,680L420,679L417,682L416,680L415,681L414,683L413,682L413,685L410,685L409,687L407,687L405,686L402,688L403,686L400,681L400,678L402,678L395,678L392,679L387,685L388,687L386,687L386,686L383,685L382,679L379,678L380,673L378,669L382,664L382,663L384,658L382,657L387,654L388,651L390,653L391,651L395,653L397,650L402,652L406,649L410,649L410,646L407,645L409,642L412,642Z","北海道":"M1169,22L1173,20L1176,14L1183,9L1184,7L1189,6L1193,6L1196,9L1193,12L1195,16L1193,19L1183,19L1177,24L1168,26L1157,33L1148,42L1142,42L1140,39L1136,40L1134,43L1136,44L1133,49L1120,56L1116,63L1114,65L1108,66L1103,73L1100,74L1097,72L1099,68L1102,67L1102,62L1104,65L1106,62L1105,60L1109,61L1113,58L1114,54L1110,53L1109,50L1116,51L1117,47L1129,40L1130,34L1128,33L1136,34L1138,33L1138,31L1140,28L1146,26L1147,24L1145,18L1148,14L1151,14L1155,23L1161,24ZM841,29L841,25L845,18L844,12L847,16L852,15L855,12L856,9L859,8L864,15L870,19L886,36L890,42L890,44L897,53L910,66L927,77L930,81L937,84L954,90L970,93L971,97L973,100L978,103L989,104L997,104L1008,93L1016,88L1023,79L1025,84L1020,91L1019,96L1012,106L1010,114L1014,121L1024,124L1024,126L1021,126L1024,125L1023,124L1019,124L1020,123L1017,122L1017,123L1020,135L1026,142L1031,143L1039,136L1047,136L1044,139L1037,140L1036,143L1035,142L1034,146L1032,148L1032,149L1028,148L1017,151L1014,151L1011,157L1006,160L1001,160L999,158L1000,156L997,156L994,161L996,163L980,163L974,159L967,160L955,167L940,180L929,194L926,201L926,212L925,216L922,221L922,224L917,218L908,212L901,211L885,203L876,198L871,193L863,190L855,184L844,182L847,180L830,187L818,195L813,201L810,199L810,198L812,200L813,198L809,197L807,192L802,189L802,187L799,184L793,185L788,184L784,187L779,197L778,202L779,205L784,206L791,212L799,211L801,212L811,224L818,227L822,231L818,232L816,236L811,237L802,233L798,235L799,231L796,230L794,235L786,238L786,246L784,248L777,250L774,256L771,254L769,254L766,252L764,244L768,231L770,230L771,221L766,213L761,211L759,207L755,206L753,204L753,200L757,192L756,183L759,179L767,178L771,174L773,170L776,173L779,173L779,170L783,164L790,160L790,158L780,146L781,139L785,140L788,137L795,142L796,143L802,146L803,148L814,145L813,148L821,151L827,148L834,140L834,134L830,128L832,124L829,116L832,111L840,108L844,102L844,103L844,80L849,73L851,61L849,47Z","兵庫県":"M515,600L515,604L518,608L523,607L524,609L524,615L522,616L518,615L518,621L524,624L525,625L527,623L529,624L529,626L531,627L531,629L535,629L535,631L541,632L541,635L538,637L539,638L538,642L544,644L542,645L543,646L542,650L544,655L541,659L541,657L540,659L537,656L531,658L530,660L524,662L520,661L514,656L513,657L512,655L510,654L505,652L505,653L505,652L504,653L503,652L501,654L499,652L496,654L496,651L496,654L494,653L493,656L490,654L489,656L488,651L485,648L487,645L485,643L487,640L486,638L488,637L491,630L493,630L492,626L498,623L498,618L496,617L496,614L494,613L493,608L494,606L491,602L499,599L503,601L505,599L505,600L510,599L514,601ZM511,674L522,663L523,665L516,674L517,679L518,681L519,683L512,687L508,688L507,686L508,684L505,685L505,682L506,680L508,680Z","千葉県":"M754,574L755,574L761,583L770,587L772,589L780,588L787,584L789,585L788,584L789,582L795,588L798,589L801,592L804,595L806,595L807,596L806,598L805,597L796,598L788,605L784,614L784,621L783,627L780,631L779,630L776,632L770,633L769,635L763,639L761,645L756,645L755,643L752,642L755,641L758,639L755,637L757,634L756,628L758,625L757,622L754,620L756,619L757,617L759,618L760,616L760,614L763,612L764,611L764,612L764,611L765,611L767,607L769,607L769,606L770,606L769,606L770,605L768,605L768,604L770,605L770,604L764,600L764,598L761,599L761,601L759,602L758,602L760,598L758,593L760,588Z","富山県":"M650,521L654,524L656,540L655,544L652,546L653,548L651,549L648,556L645,556L643,554L641,555L638,554L638,552L634,554L634,552L631,552L629,554L626,552L622,557L619,562L617,563L617,559L614,558L613,559L612,557L610,561L609,562L608,559L609,558L608,554L610,546L608,542L610,539L608,536L611,534L614,524L620,521L618,527L622,532L624,532L623,533L634,534L638,531L639,524Z","東京都":"M713,588L717,586L725,589L730,589L735,594L742,591L741,594L742,593L742,594L744,593L746,593L747,592L752,593L752,591L756,590L756,592L759,592L760,598L758,601L755,601L755,602L754,600L753,600L752,604L755,607L754,608L750,607L748,604L743,601L741,601L740,603L738,602L738,603L740,605L739,605L738,609L735,604L728,603L726,601L717,596ZM737,659L733,657L733,652L737,653Z","埼玉県":"M722,562L732,566L733,564L738,568L744,567L746,568L748,566L751,574L754,574L760,588L759,592L753,590L752,593L747,592L746,593L744,593L742,594L742,593L741,594L742,591L740,593L735,594L730,589L725,589L717,586L711,589L703,585L702,580L704,577L708,577L709,575L713,574L714,572L718,572Z","山口県":"M361,658L363,665L360,669L361,673L366,673L364,676L365,679L367,681L370,681L372,679L374,681L377,677L376,674L379,671L379,678L382,679L383,685L386,686L386,687L388,687L388,690L386,692L386,699L385,702L382,702L384,709L382,710L382,707L378,705L379,704L377,705L374,704L374,703L369,699L366,700L367,701L364,701L368,698L365,698L366,696L364,696L364,695L357,698L356,697L354,700L350,697L349,700L348,698L347,700L348,698L346,696L345,701L340,704L339,704L339,702L336,704L336,700L334,700L329,696L323,705L321,702L324,702L323,696L321,693L324,688L324,685L321,682L322,680L322,679L329,677L328,675L324,676L326,673L328,675L334,674L334,677L337,676L338,677L338,676L342,677L344,674L348,674L347,672L348,672L350,670L350,667L352,667L354,665L354,662L357,662L357,660L359,661ZM386,708L384,705L385,702L390,702L392,705L396,702L398,703L394,705L394,708L392,708L392,706L390,705L390,707L387,707Z","福島県":"M778,461L781,462L784,461L787,463L788,465L792,464L798,466L798,471L803,473L802,471L806,471L806,466L810,466L812,470L814,479L814,505L812,520L810,522L804,525L802,528L794,525L792,523L793,527L790,528L787,532L783,529L782,526L779,524L776,523L776,518L774,518L772,514L765,511L758,511L755,512L756,514L748,516L742,520L738,521L737,524L733,525L727,523L728,520L728,510L724,505L727,499L727,497L725,495L727,492L735,492L737,488L744,489L742,480L746,478L748,474L752,470L750,468L749,469L751,468L752,470L754,470L755,471L761,470L764,474L767,473L770,475L772,474L776,475L779,471L777,469Z","石川県":"M623,491L632,487L636,488L636,492L631,493L631,501L626,501L620,508L616,506L617,505L614,506L615,507L612,511L614,512L612,513L612,515L615,514L618,516L620,513L622,513L622,521L616,522L613,524L611,534L608,536L610,537L610,539L608,542L610,546L608,554L609,558L608,559L609,562L612,565L607,570L607,574L602,575L597,570L592,571L590,569L588,570L586,566L582,562L590,554L598,544L606,529L607,519L605,516L606,511L603,510L606,498L612,495L616,496Z","福井県":"M582,562L586,566L588,570L590,569L592,571L597,570L602,575L607,574L605,580L609,583L611,588L608,591L596,592L595,594L594,593L588,592L586,593L586,596L584,600L578,598L577,599L578,606L576,604L575,608L571,608L569,610L567,608L565,615L561,615L558,618L556,619L547,617L547,614L544,611L545,609L543,608L545,606L544,608L546,608L546,606L546,609L548,610L554,606L554,608L552,608L552,610L550,610L556,610L559,607L556,608L555,607L556,605L560,608L562,607L560,605L562,606L563,604L561,601L564,603L569,602L568,596L571,594L572,597L571,599L574,600L575,593L570,586L570,583L568,580L576,567L576,568L576,564Z","愛媛県":"M402,721L408,717L410,714L409,711L411,708L410,706L410,705L413,705L413,700L418,696L421,695L421,693L419,692L422,691L430,704L440,700L449,701L454,697L457,698L458,703L457,706L451,706L449,710L445,709L440,710L438,710L436,712L434,712L430,720L428,720L428,723L427,725L428,727L425,731L415,732L420,739L420,741L414,743L414,747L412,748L410,751L406,748L408,754L409,762L405,765L405,763L403,763L403,764L401,762L402,763L400,764L402,764L400,766L398,763L400,763L399,761L400,761L403,762L401,761L399,756L398,757L396,756L396,758L394,758L396,755L399,756L398,752L400,752L397,751L397,749L398,749L396,747L398,747L400,750L400,748L401,749L400,748L401,747L403,746L401,744L402,743L401,744L399,743L399,744L401,740L397,740L396,741L394,740L396,738L396,736L395,738L394,736L396,733L395,733L396,732L395,732L395,731L394,732L393,730L391,732L390,731L383,737L381,738L382,736L377,739L382,734L384,735L384,733L384,734L384,733L388,732L389,732L388,731L396,727L399,722Z","奈良県":"M556,652L558,656L563,657L565,657L567,654L570,657L572,657L573,655L574,659L573,660L572,660L574,661L573,665L576,667L578,666L579,668L581,668L580,672L575,673L574,676L576,680L575,681L576,684L575,688L576,694L575,694L575,698L571,697L565,702L565,705L564,704L564,708L561,705L558,706L554,705L552,707L551,705L552,700L548,695L548,694L553,688L553,687L556,687L557,686L556,683L554,683L553,676L555,672L553,667L555,664L553,663Z","島根県":"M437,570L436,568L433,567L433,562L434,563L434,561L438,558L441,561L443,563L442,567L441,568L441,566L439,567L441,568L441,569L438,568ZM436,606L434,608L440,615L439,620L440,623L432,626L434,629L432,631L431,635L426,635L424,633L422,635L418,633L412,642L409,642L407,645L410,646L410,649L406,649L402,652L397,650L395,653L391,651L390,653L388,651L387,654L382,657L384,658L382,663L382,664L378,668L379,671L376,674L377,677L374,681L372,679L370,681L366,680L364,676L366,673L361,673L360,669L363,665L361,658L367,658L372,652L376,647L379,647L381,642L391,636L396,628L406,622L409,617L406,613L412,613L411,611L418,609L423,608L423,607L426,607L427,605L429,605L429,603L432,606L435,604L440,605Z","岩手県":"M841,317L841,315L846,312L850,318L853,326L852,328L855,331L853,332L853,334L858,339L860,342L858,344L862,354L860,356L861,360L859,364L863,360L863,365L865,366L862,371L859,371L860,373L864,370L864,374L861,375L860,374L858,376L860,377L859,378L856,379L861,378L860,381L856,381L858,383L856,383L856,384L860,384L859,385L859,386L855,387L858,388L854,391L858,393L856,394L852,392L853,395L855,396L852,396L854,398L852,398L852,397L850,398L848,398L848,395L847,398L849,400L847,400L847,401L848,402L847,403L845,399L843,399L844,401L837,400L837,404L835,407L834,412L833,413L832,411L828,410L828,412L826,412L825,414L823,414L818,410L820,407L812,407L804,402L802,402L802,399L804,396L801,394L802,392L801,391L804,389L802,388L803,385L799,383L798,381L799,379L796,376L798,372L800,371L800,365L803,363L804,360L804,358L802,355L806,352L802,350L802,347L807,347L805,335L807,333L806,329L808,327L811,324L812,326L814,326L818,324L818,322L820,321L823,320L828,317L830,320L832,317L836,317L839,318Z","鳥取県":"M491,602L494,606L493,608L494,613L496,614L496,617L498,618L498,623L496,625L492,624L489,627L486,627L481,629L480,622L473,621L474,618L470,619L465,624L461,620L454,619L452,625L449,625L450,628L444,628L444,632L439,633L438,636L437,635L431,635L432,631L434,629L432,626L440,623L439,620L440,615L435,610L434,608L435,607L437,606L436,607L437,609L444,612L452,608L462,609L474,607L475,608L482,607Z","徳島県":"M494,687L501,686L501,685L501,687L504,689L502,692L502,699L502,700L504,699L507,704L504,708L508,708L506,710L510,709L501,713L498,717L492,720L491,723L489,724L491,725L488,725L488,727L483,726L480,722L482,720L482,718L476,718L475,710L471,709L470,712L468,712L465,709L461,709L457,706L458,704L458,699L462,695L470,692L473,695L476,692L479,692L482,689L490,688L493,690Z","鹿児島県":"M308,808L314,813L313,816L317,819L318,822L321,823L323,826L322,830L327,833L326,834L328,834L330,841L331,840L334,842L335,841L337,845L335,852L333,851L328,856L328,858L333,860L331,863L334,863L331,866L328,866L326,871L317,874L311,880L312,876L311,875L315,871L318,859L316,854L313,852L313,846L310,847L308,844L312,842L314,843L313,846L316,846L319,840L318,837L312,835L309,837L308,841L304,848L305,850L304,850L307,861L311,863L310,868L307,870L306,869L304,870L301,864L293,863L292,865L289,864L290,863L289,862L290,861L287,860L289,859L284,855L287,853L290,856L291,855L293,853L295,846L294,840L291,836L288,834L287,832L290,825L288,820L287,820L289,816L287,813L290,812L294,813L296,809L298,812L301,813L302,811L307,810ZM325,901L324,899L330,889L331,898L329,905L326,911L326,917L321,919L320,912L324,907ZM304,926L300,925L297,917L303,911L311,917L310,922L307,925ZM262,1033L262,1031L263,1033L262,1030L263,1028L265,1031L265,1034L260,1035L256,1040L257,1041L253,1042L252,1045L250,1044L253,1047L250,1048L250,1050L247,1049L249,1053L245,1050L244,1048L243,1048L245,1046L243,1046L244,1046L243,1045L242,1047L237,1044L239,1043L240,1044L241,1043L242,1044L245,1043L241,1041L245,1040L247,1037L250,1038L250,1036L252,1036L253,1035L254,1035L254,1037L257,1032L258,1032L260,1031L259,1035L260,1032L261,1034ZM226,1074L225,1066L229,1066L229,1069L229,1070L232,1073L231,1076L230,1079L227,1080L225,1076Z","新潟県":"M742,426L751,430L750,436L757,439L759,442L758,446L754,448L750,447L749,449L748,455L749,456L748,457L746,464L748,468L750,468L752,470L748,474L746,478L742,480L744,489L737,488L735,492L727,492L725,495L727,497L727,499L724,505L728,510L728,523L725,522L724,519L720,516L718,520L714,520L715,526L712,526L712,529L707,530L707,534L706,535L702,534L701,535L700,532L701,528L696,525L696,520L695,518L693,518L686,520L684,524L682,525L681,529L678,527L672,529L670,531L667,530L669,527L668,525L661,524L661,527L656,533L653,523L650,521L663,516L672,509L678,509L680,507L679,508L688,500L694,497L697,490L704,483L708,470L719,462L727,460L733,454L737,448L738,436ZM679,471L677,470L680,468L681,464L684,462L682,459L680,462L678,461L679,454L687,444L689,444L690,440L693,440L688,454L691,456L695,454L695,456L690,466L684,470Z","高知県":"M453,707L456,706L461,709L465,709L469,712L471,709L475,710L476,718L482,718L482,720L480,722L482,726L488,726L483,736L482,744L478,742L475,735L471,733L470,730L460,727L452,729L452,726L451,728L452,730L442,734L444,734L445,733L447,734L441,736L440,738L439,735L436,740L437,741L436,742L437,744L435,748L435,750L433,750L429,757L429,758L426,757L425,758L425,766L422,768L422,771L425,772L426,776L423,776L423,773L422,774L421,772L418,772L418,774L418,772L414,775L410,772L407,774L408,768L410,766L411,767L411,766L410,764L408,764L410,761L406,748L410,751L412,748L414,747L414,743L420,741L420,739L415,732L425,731L428,727L427,725L428,723L428,720L430,720L434,712L436,712L438,710L440,710L445,709L449,710L451,707Z","宮崎県":"M352,773L355,774L356,773L362,773L363,769L365,769L369,770L368,775L370,775L369,778L368,777L366,780L365,779L364,783L362,784L361,787L361,789L362,788L363,790L361,791L359,790L359,793L360,792L360,794L359,794L361,794L359,795L355,804L350,827L350,830L351,832L349,839L350,841L346,846L346,854L344,856L344,858L342,856L340,856L339,854L335,852L337,848L337,842L333,842L331,840L330,841L328,834L326,834L327,833L322,830L323,826L321,823L318,822L317,819L313,815L315,813L319,814L323,811L326,812L328,809L333,810L330,804L333,800L328,793L328,788L330,784L333,784L333,781L335,779L336,779L340,770L344,769L345,771L350,769L353,771Z","神奈川県":"M722,599L726,601L728,603L735,604L738,609L739,605L740,605L738,603L740,603L741,601L748,604L750,607L754,608L754,609L752,607L753,609L751,609L751,608L751,610L746,611L749,613L748,615L746,616L748,617L748,619L746,620L748,620L746,621L748,622L752,624L751,625L751,627L748,628L748,631L746,631L746,630L745,628L746,626L744,624L743,622L737,620L728,622L723,625L724,631L717,630L715,625L717,620L716,616L712,615L714,612L721,607Z"},"inset":[-4.0,159.0,378.0,431.0],"cen":{"京都府":[543,624],"佐賀県":[285,742],"熊本県":[319,781],"香川県":[472,686],"愛知県":[629,637],"栃木県":[755,538],"山梨県":[697,603],"滋賀県":[577,626],"群馬県":[715,549],"宮城県":[809,432],"静岡県":[683,638],"茨城県":[780,561],"沖縄県":[340,206],"山形県":[769,432],"和歌山県":[546,705],"長崎県":[275,762],"秋田県":[784,354],"岡山県":[464,645],"福岡県":[311,728],"岐阜県":[621,592],"青森県":[805,292],"大阪府":[546,662],"長野県":[669,571],"大分県":[348,747],"三重県":[588,668],"広島県":[414,662],"北海道":[889,136],"兵庫県":[513,634],"千葉県":[774,609],"富山県":[632,541],"東京都":[737,596],"埼玉県":[733,579],"山口県":[354,687],"福島県":[775,496],"石川県":[607,533],"福井県":[581,588],"愛媛県":[417,723],"奈良県":[564,680],"島根県":[402,638],"岩手県":[830,364],"鳥取県":[466,617],"徳島県":[485,704],"鹿児島県":[309,841],"新潟県":[714,490],"高知県":[442,734],"宮崎県":[342,807],"神奈川県":[732,615]}};
+
+
+// ---------- 出題 ----------
 const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
-// 同じ都道府県ができるだけ重ならないように選ぶ
-function pickSpread(list, n, used = new Set()) {
-  const out = [];
-  for (const q of shuffle(list)) {
-    if (out.length >= n) break;
-    if (!used.has(q.pref)) { out.push(q); used.add(q.pref); }
-  }
-  for (const q of shuffle(list)) { if (out.length >= n) break; if (!out.includes(q)) out.push(q); }
+const TYPES = [
+  { id: "team", label: "球団" },
+  { id: "player", label: "選手" },
+  { id: "mlb", label: "メジャー" },
+  { id: "school", label: "高校" },
+  { id: "meisan", label: "名産" }
+];
+const ALL_TYPES = TYPES.map(t => t.id);
+
+const SAME_TEAM = { "ダイエー": ["ソフトバンク"], "近鉄": ["オリックス", "楽天"], "横浜（大洋）": ["DeNA"], "DeNA（横浜）": ["DeNA"] };
+function careerQs(c, prefOnly) {
+  const sub = c.status === "now" ? c.now : c.status === "npb" ? `いまは${c.now}` : "元メジャーリーガー";
+  const base = { name: c.name, sub, yomi: c.yomi, pref: c.pref, fact: c.fact, rare: c.rare, path: c.path };
+  const out = [{ ...base, kind: "メジャー" }];
+  if (prefOnly) return out;
+  const opts = (answer, pool) => {
+    const bad = SAME_TEAM[answer] || [];
+    return shuffle([answer, ...shuffle(pool.filter(x => x !== answer && !bad.includes(x))).slice(0, 3)]);
+  };
+  out.push({ ...base, kind: "道のり", ask: "この選手の出身高校は どこ？", answer: c.school + "高校", options: opts(c.school + "高校", SCHOOL_POOL.map(x => x + "高校")) });
+  out.push({ ...base, kind: "道のり", ask: "この選手が 日本で最初に入ったチームは？", answer: c.npb, options: opts(c.npb, NPB_TEAMS) });
+  out.push({ ...base, kind: "道のり", ask: "この選手が メジャーで最初に入ったチームは？", answer: c.mlb, options: opts(c.mlb, MLB_TEAMS) });
   return out;
 }
 
-function buildQuestions(mode) {
-  if (mode === "pro") return shuffle(TEAMS).slice(0, 9);
-  if (mode === "player") return pickSpread(PLAYERS, 9);
-  if (mode === "hs") return shuffle(Object.keys(SCHOOLS_RAW)).slice(0, 9).map(schoolQuestion);
-  if (mode === "new") {
-    const missing = PREFS.map(p => p.name).filter(n => !stamps.has(n));
-    const pool = missing.length >= 9 ? missing : Object.keys(SCHOOLS_RAW);
-    return shuffle(pool).slice(0, 9).map(schoolQuestion);
+function questionsFor(pref, types, prefOnly = false) {
+  const out = [];
+  if (types.includes("team")) out.push(...TEAMS.filter(q => q.pref === pref));
+  if (types.includes("player")) out.push(...PLAYERS.filter(q => q.pref === pref));
+  if (types.includes("mlb")) {
+    for (const c of CAREER.filter(c => c.pref === pref)) out.push(...careerQs(c, prefOnly));
   }
-  // mix: 2 teams + 3 players + 4 schools
-  const used = new Set();
-  const t = pickSpread(TEAMS, 2, used);
-  const pl = pickSpread(PLAYERS, 3, used);
-  const s = shuffle(Object.keys(SCHOOLS_RAW).filter(n => !used.has(n))).slice(0, 4).map(schoolQuestion);
-  return shuffle([...t, ...pl, ...s]);
+  if (types.includes("school") && SCHOOLS_RAW[pref]) {
+    for (const [name, yomi, fact, rare] of SCHOOLS_RAW[pref]) out.push({ kind: "高校野球", name: name + "高校", yomi, pref, fact, rare });
+  }
+  if (types.includes("meisan") && MEISAN[pref]) {
+    out.push({ kind: "名産", name: MEISAN[pref].map(m => `「${m}」`).join(""), yomi: "", pref, fact: `${pref}の名産だよ。${P[pref].region}にある${pref.endsWith("都") ? "都" : pref.endsWith("府") ? "府" : pref === "北海道" ? "道" : "県"}だね。` });
+  }
+  return out;
 }
 
-function makeChoices(correct) {
+const ASK = {
+  "プロ野球": "このチームのホームは どこの都道府県？",
+  "選手": "この選手は どこの都道府県の出身？",
+  "メジャー": "このメジャーリーガーは どこの都道府県の出身？",
+
+  "高校野球": "この高校は どこの都道府県？",
+  "名産": "これが名産なのは どこの都道府県？"
+};
+
+const AREAS = {
+  free:  { label: "フリーモード", desc: "全国から好きなだけ", regions: null },
+  kanto: { label: "関東モード", desc: "関東の7都県で9回勝負", regions: ["関東地方"] },
+  east:  { label: "東日本モード", desc: "北海道・東北・関東・中部", regions: ["北海道地方", "東北地方", "関東地方", "中部地方"] },
+  west:  { label: "西日本モード", desc: "近畿・中国・四国・九州・沖縄", regions: ["近畿地方", "中国地方", "四国地方", "九州地方"] }
+};
+const areaPrefs = id => PREFS.filter(p => !AREAS[id].regions || AREAS[id].regions.includes(p.region)).map(p => p.name);
+
+function makeChoices(correct, pool) {
   const c = P[correct];
-  const near = shuffle(PREFS.filter(p => p.region === c.region && p.name !== correct)).slice(0, 1);
-  const taken = new Set([correct, ...near.map(p => p.name)]);
-  const far = shuffle(PREFS.filter(p => !taken.has(p.name))).slice(0, 3 - near.length);
-  return shuffle([c, ...near, ...far]);
+  let others;
+  if (pool && pool.length >= 4) {
+    others = shuffle(pool.filter(n => n !== correct)).slice(0, 3);
+  } else {
+    const near = shuffle(PREFS.filter(p => p.region === c.region && p.name !== correct)).slice(0, 1).map(p => p.name);
+    const far = shuffle(PREFS.filter(p => p.name !== correct && !near.includes(p.name))).slice(0, 3 - near.length).map(p => p.name);
+    others = [...near, ...far];
+  }
+  return shuffle([correct, ...others]).map(n => P[n]);
 }
 
-// stamps (kept in this browser only)
-let stamps = new Set();
-try { stamps = new Set(JSON.parse(localStorage.getItem("tdfk-stamps") || "[]")); } catch (e) {}
-const saveStamps = () => { try { localStorage.setItem("tdfk-stamps", JSON.stringify([...stamps])); } catch (e) {} };
+// ---------- セーブ（この端末のブラウザに保存） ----------
+const SAVE_KEY = "tdfk-baseball-saves-v2";
+let save = { slots: [null, null, null, null, null], current: null };
+try {
+  const raw = JSON.parse(localStorage.getItem(SAVE_KEY) || "null");
+  if (raw && Array.isArray(raw.slots)) save = raw;
+} catch (e) {}
+const persist = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {} };
+const newSlot = name => ({ name, stamps: [], best: {}, trip: 0, tripClears: 0, bestStreak: 0, types: ALL_TYPES.slice() });
+const me = () => save.current != null ? save.slots[save.current] : null;
+const addStamp = pref => { const s = me(); if (s && !s.stamps.includes(pref)) s.stamps.push(pref); };
 
+// ---------- 地図 ----------
+function mapSvg({ got = [], done = [], on = null, miss = null, label = true } = {}) {
+  const pad = 16;
+  const vb = `${-pad} ${-pad} ${MAP.w + pad * 2} ${MAP.h + pad * 2}`;
+  const paths = Object.entries(MAP.paths).map(([n, d]) => {
+    const cls = n === on ? "on" : n === miss ? "miss" : done.includes(n) ? "done" : got.includes(n) ? "got" : "";
+    return `<path d="${d}" class="${cls}"><title>${n}</title></path>`;
+  }).join("");
+  const [ix0, iy0, ix1, iy1] = MAP.inset;
+  let marks = "";
+  for (const [n, pulse] of [[miss, false], [on, true]]) {
+    if (!n) continue;
+    const [x, y] = MAP.cen[n];
+    marks += `<circle class="ring" cx="${x}" cy="${y}" r="26" style="stroke:${n === miss ? "var(--stitch)" : "var(--lamp)"}"/>`;
+    if (pulse) marks += `<circle class="ring pulse" cx="${x}" cy="${y}" r="26"/>`;
+    if (label) {
+      const right = x < MAP.w * 0.55;
+      marks += `<text x="${right ? x + 40 : x - 40}" y="${y + 14}" text-anchor="${right ? "start" : "end"}">${n}</text>`;
+    }
+  }
+  return `<div class="map"><svg viewBox="${vb}" role="img" aria-label="日本地図">
+    <rect class="inset" x="${ix0}" y="${iy0}" width="${ix1 - ix0}" height="${iy1 - iy0}" rx="10"/>
+    ${paths}${marks}
+    <text class="credit" x="${MAP.w}" y="${MAP.h + 8}" text-anchor="end">地図：地球地図日本（国土地理院）をもとに作成</text>
+  </svg></div>`;
+}
+
+// ---------- 画面 ----------
+const app = document.getElementById("app");
+const headRight = document.getElementById("head-right");
 let game = null;
-const $ = id => document.getElementById(id);
-const stage = $("stage");
+let view = "home";
+let slotEdit = null;     // 名前を入れている枠
+let slotDelete = null;   // けす確認中の枠
 
-function drawBoard() {
-  const head = ["", ...Array.from({ length: 9 }, (_, i) => i + 1), "R"];
-  $("board-head").innerHTML = head.map(h => `<th>${h}</th>`).join("");
+function header() {
+  const s = me();
+  if (!s) { headRight.innerHTML = ""; return; }
+  headRight.innerHTML = `
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="${view !== "book"}" data-go="home">あそぶ</button>
+      <button class="tab" role="tab" aria-selected="${view === "book"}" data-go="book">スタンプ帳</button>
+    </div>
+    <div class="player-chip"><span class="who">${esc(s.name)}</span><button class="ghost small" data-go="slots">かえる</button></div>`;
+  headRight.querySelectorAll("[data-go]").forEach(b => b.onclick = () => {
+    if (b.dataset.go === "slots") { save.current = null; persist(); game = null; }
+    view = b.dataset.go === "book" ? "book" : "home";
+    if (view === "home") game = null;
+    render();
+  });
+}
+
+function render() {
+  header();
+  if (!me()) return renderSlots();
+  if (view === "book") return renderBook();
+  if (game) return renderGame();
+  renderHome();
+}
+
+function renderSlots() {
+  app.innerHTML = `
+    <h2 class="sec">だれが あそぶ？</h2>
+    <p class="muted">セーブは5人分。名前を入れると、スタンプ帳や日本一周の進み具合をべつべつに記録できるよ。</p>
+    <div class="slots">
+      ${save.slots.map((s, i) => {
+        if (slotEdit === i) return `
+          <div class="slot"><div class="no">${i + 1}</div>
+            <div class="info"><input id="name-${i}" maxlength="10" placeholder="なまえ" value="${s ? esc(s.name) : ""}" aria-label="なまえ"></div>
+            <div class="acts"><button class="primary" style="font-size:15px;padding:8px 14px" data-ok="${i}">けってい</button><button class="ghost small" data-cancel="${i}">やめる</button></div></div>`;
+        if (slotDelete === i) return `
+          <div class="slot"><div class="no">${i + 1}</div>
+            <div class="info"><div class="nm">${esc(s.name)} のデータを けしますか？</div><div class="meta">スタンプも日本一周の記録も消えます。</div></div>
+            <div class="acts"><button class="ghost small" style="border-color:var(--stitch)" data-del-yes="${i}">けす</button><button class="ghost small" data-cancel="${i}">やめる</button></div></div>`;
+        if (!s) return `
+          <div class="slot"><div class="no">${i + 1}</div>
+            <div class="info"><div class="nm" style="color:var(--chalk-dim)">あき</div><div class="meta">あたらしく はじめる</div></div>
+            <div class="acts"><button class="ghost small" data-new="${i}">名前を入れる</button></div></div>`;
+        return `
+          <div class="slot"><div class="no">${i + 1}</div>
+            <div class="info"><div class="nm">${esc(s.name)}</div>
+              <div class="meta">スタンプ ${s.stamps.length}/47 ・ 日本一周 ${s.trip}/47${s.tripClears ? `（${s.tripClears}周クリア）` : ""}</div></div>
+            <div class="acts"><button class="primary" style="font-size:15px;padding:8px 14px" data-play="${i}">あそぶ</button>
+              <button class="ghost small" data-new="${i}">名前</button><button class="ghost small" data-del="${i}">けす</button></div></div>`;
+      }).join("")}
+    </div>`;
+  app.querySelectorAll("[data-new]").forEach(b => b.onclick = () => { slotEdit = +b.dataset.new; slotDelete = null; render(); const el = document.getElementById("name-" + slotEdit); el && el.focus(); });
+  app.querySelectorAll("[data-cancel]").forEach(b => b.onclick = () => { slotEdit = slotDelete = null; render(); });
+  app.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { slotDelete = +b.dataset.del; slotEdit = null; render(); });
+  app.querySelectorAll("[data-del-yes]").forEach(b => b.onclick = () => { save.slots[+b.dataset.delYes] = null; slotDelete = null; persist(); render(); });
+  app.querySelectorAll("[data-play]").forEach(b => b.onclick = () => { save.current = +b.dataset.play; view = "home"; persist(); render(); });
+  const ok = i => {
+    const v = document.getElementById("name-" + i).value.trim().slice(0, 10);
+    if (!v) { document.getElementById("name-" + i).focus(); return; }
+    if (save.slots[i]) save.slots[i].name = v; else save.slots[i] = newSlot(v);
+    slotEdit = null; save.current = i; view = "home"; persist(); render();
+  };
+  app.querySelectorAll("[data-ok]").forEach(b => b.onclick = () => ok(+b.dataset.ok));
+  const inp = slotEdit != null && document.getElementById("name-" + slotEdit);
+  if (inp) inp.onkeydown = e => { if (e.key === "Enter") ok(slotEdit); };
+}
+
+function renderHome() {
+  const s = me();
+  const best = id => s.best[id] != null ? `<span class="best">ベスト ${s.best[id]}点</span>` : "";
+  app.innerHTML = `
+    <div class="stack">
+      <h2 class="sec">モードをえらぶ</h2>
+      <div class="modes">
+        <button class="mode trip" data-mode="trip"><b>日本一周</b><span>北海道から沖縄まで、47都道府県を1つずつ旅しよう（いま ${s.trip}/47${s.tripClears ? `・${s.tripClears}周クリア` : ""}）</span></button>
+        <button class="mode" data-mode="free"><b>フリーモード</b><span>全国から好きなだけ</span>${s.bestStreak ? `<span class="best">さいこう ${s.bestStreak}れんぞく</span>` : ""}</button>
+        <button class="mode" data-mode="kanto"><b>関東モード</b><span>関東の7都県で9回勝負</span>${best("kanto")}</button>
+        <button class="mode" data-mode="east"><b>東日本モード</b><span>北海道・東北・関東・中部</span>${best("east")}</button>
+        <button class="mode" data-mode="west"><b>西日本モード</b><span>近畿・中国・四国・九州・沖縄</span>${best("west")}</button>
+      </div>
+    </div>
+    <div class="stack">
+      <h2 class="sec">クイズのしゅるい</h2>
+      <p class="muted">出してほしい問題をえらんでね（いくつでもOK）。</p>
+      <div class="types">${TYPES.map(t => `<button class="type" aria-pressed="${s.types.includes(t.id)}" data-type="${t.id}">${t.label}</button>`).join("")}</div>
+      <p class="muted" id="type-note"></p>
+    </div>`;
+  app.querySelectorAll("[data-type]").forEach(b => b.onclick = () => {
+    const id = b.dataset.type;
+    if (s.types.includes(id)) {
+      if (s.types.length === 1) { document.getElementById("type-note").textContent = "1つはえらんでおいてね。"; return; }
+      s.types = s.types.filter(t => t !== id);
+    } else s.types.push(id);
+    persist(); renderHome();
+  });
+  app.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => startGame(b.dataset.mode));
+}
+
+// ---------- ゲーム ----------
+function startGame(mode) {
+  const s = me();
+  game = { mode, i: 0, results: [], ok: 0, n: 0, streak: 0, used: [], over: false };
+  if (mode === "trip") game.pool = null;
+  else game.pool = areaPrefs(mode);
+  nextQuestion();
+}
+
+function nextQuestion() {
+  const s = me();
+  let pref;
+  if (game.mode === "trip") {
+    game.tripIdx = s.trip;
+    pref = PREFS[s.trip].name;
+  } else {
+    const avail = game.pool.filter(n => questionsFor(n, s.types).length);
+    const fresh = avail.filter(n => !game.used.includes(n));
+    pref = pick(fresh.length ? fresh : avail);
+    game.used.push(pref);
+    if (game.used.length >= avail.length) game.used = [];
+  }
+  const prefOnly = game.mode === "trip";
+  let qs = questionsFor(pref, s.types, prefOnly);
+  if (!qs.length) qs = questionsFor(pref, ["school", "meisan"]);
+  game.q = pick(qs);
+  game.q.answer = game.q.answer || pref;
+  const pool = game.mode === "kanto" ? game.pool : null;
+  game.choices = game.q.options ? game.q.options.map(n => ({ name: n, yomi: "" })) : makeChoices(pref, pool);
+  game.answered = false;
+  game.picked = null;
+  render();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function boardHtml() {
+  const s = me();
+  if (game.mode === "trip") {
+    const cur = PREFS[game.tripIdx];
+    return `<div class="board">
+      <div class="trip-head"><b>日本一周 ${s.trip}/47</b><span class="muted">いま：${game.answered && game.lastOk ? cur.name : "？？？"}（${cur.region}）</span></div>
+      <div class="trip-bar"><i style="width:${(s.trip / 47 * 100).toFixed(1)}%"></i></div>
+      <div class="board-meta"><span>せいかいすると次の都道府県へ進むよ。まちがえたら同じ場所でもう一回！</span></div>
+    </div>`;
+  }
+  if (game.mode === "free") {
+    return `<div class="board"><div class="tally">
+      <div><b>${game.ok}</b><span>せいかい</span></div>
+      <div><b>${game.n}</b><span>もんだい</span></div>
+      <div><b>${game.streak}</b><span>れんぞく</span></div>
+    </div><div class="board-meta"><span>フリーモード：全国から出るよ</span><span>さいこう ${s.bestStreak}れんぞく</span></div></div>`;
+  }
+  const head = ["", ...Array.from({ length: 9 }, (_, i) => i + 1), "R"].map(h => `<th>${h}</th>`).join("");
   const cells = Array.from({ length: 9 }, (_, i) => {
-    const r = game ? game.results[i] : undefined;
-    const now = game && !game.over && i === game.i ? " now" : "";
+    const r = game.results[i];
+    const now = !game.over && i === game.i ? " now" : "";
     if (r === true) return `<td class="hit${now}">1</td>`;
     if (r === false) return `<td class="out${now}">0</td>`;
     return `<td class="${now.trim()}"></td>`;
   }).join("");
-  const total = game ? game.results.filter(Boolean).length : 0;
-  $("board-row").innerHTML = `<td class="name">きみ</td>${cells}<td class="total">${total}</td>`;
-  const last = game && game.results.length ? game.results[game.results.length - 1] : null;
-  $("lamp-h").classList.toggle("on", last === true && !game.over);
-  const outs = game ? game.results.filter(r => r === false).length % 3 : 0;
-  ["lamp-o1", "lamp-o2", "lamp-o3"].forEach((id, k) => $(id).classList.toggle("on", k < outs));
+  const total = game.results.filter(Boolean).length;
+  return `<div class="board"><div class="board-scroll"><table>
+    <thead><tr>${head}</tr></thead>
+    <tbody><tr><td class="name">${esc(s.name)}</td>${cells}<td class="total">${total}</td></tr></tbody>
+  </table></div><div class="board-meta"><span>${AREAS[game.mode].label}：${AREAS[game.mode].desc}</span><span>1問せいかいで1点</span></div></div>`;
 }
 
-function showStart() {
-  game = null;
-  drawBoard();
-  const left = 47 - stamps.size;
-  stage.innerHTML = `
-    <div class="wrap" style="gap:12px">
-      <p class="intro">チームや選手、高校の名前を見て、どこの都道府県か当てよう。せいかいした都道府県はスタンプ帳にたまっていくよ。</p>
-      <div class="modes">
-        <button class="mode" data-mode="pro"><b>プロ野球</b><span>12球団のホームはどこ？</span></button>
-        <button class="mode" data-mode="player"><b>選手</b><span>あの選手の出身はどこ？</span></button>
-        <button class="mode" data-mode="hs"><b>高校野球</b><span>甲子園の強い学校はどこの県？</span></button>
-        <button class="mode" data-mode="mix"><b>ミックス</b><span>球団・選手・高校をまぜて9問</span></button>
-        <button class="mode" data-mode="new"><b>スタンプあつめ</b><span>まだの都道府県から出るよ（のこり${left}）</span></button>
-      </div>
+function renderGame() {
+  if (game.over) return renderResult();
+  const s = me();
+  const q = game.q;
+  const inningLabel = game.mode === "trip" ? `${game.tripIdx + 1}こめ` : game.mode === "free" ? `${game.n + (game.answered ? 0 : 1)}問め` : `${game.i + 1}回`;
+  let html = boardHtml();
+  if (game.mode === "trip") {
+    const doneList = PREFS.slice(0, game.tripIdx).map(p => p.name);
+    if (!game.answered) html += mapSvg({ done: doneList, label: false });
+  }
+  html += `
+    <div class="pitch">
+      <div><span class="inning">${inningLabel}</span><span class="tag">${q.kind}</span>${q.sub ? `<span class="tag red">${esc(q.sub)}</span>` : ""}</div>
+      <p class="subject">${esc(q.name)}</p>
+      ${q.yomi ? `<div class="reading">${esc(q.yomi)}</div>` : ""}
+      <p class="ask">${q.ask || ASK[q.kind]}</p>
+      <div class="hint-row"><button class="hint-btn" id="hint-btn">ヒントを見る</button><span class="hint" id="hint" hidden>${P[q.pref].region}だよ</span></div>
+    </div>
+    <div class="choices">
+      ${game.choices.map((c, k) => {
+        let cls = "";
+        if (game.answered) cls = c.name === q.answer ? "right" : k === game.picked ? "wrong" : "";
+        return `<button class="choice ${cls}" data-k="${k}" ${game.answered ? "disabled" : ""}><b${c.name.length > 7 ? ' style="font-size:17px"' : ""}>${esc(c.name)}</b>${c.yomi ? `<span>${c.yomi}</span>` : ""}</button>`;
+      }).join("")}
     </div>`;
-  stage.querySelectorAll(".mode").forEach(b => b.addEventListener("click", () => startGame(b.dataset.mode)));
+  if (game.answered) html += callHtml();
+  app.innerHTML = html;
+  const hb = document.getElementById("hint-btn");
+  hb.onclick = () => { document.getElementById("hint").hidden = false; hb.hidden = true; };
+  if (!game.answered) app.querySelectorAll(".choice").forEach(b => b.onclick = () => answer(+b.dataset.k));
+  else {
+    const nb = document.getElementById("next-btn");
+    nb.onclick = afterCall;
+    nb.focus({ preventScroll: true });
+    const qb = document.getElementById("quit-btn");
+    if (qb) qb.onclick = () => { game = null; render(); };
+    document.getElementById("call").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 }
 
-function startGame(mode) {
-  game = { mode, qs: buildQuestions(mode), i: 0, results: [], over: false, answered: false };
-  showQuestion();
-}
-
-function showQuestion() {
-  const q = game.qs[game.i];
-  game.answered = false;
-  game.choices = makeChoices(q.pref);
-  drawBoard();
-  const ask = q.kind === "プロ野球" ? "このチームのホームは どこの都道府県？" : q.kind === "選手" ? "この選手の出身は どこの都道府県？" : "この高校は どこの都道府県？";
-  stage.innerHTML = `
-    <div class="wrap" style="gap:12px">
-      <div class="pitch">
-        <div><span class="inning">${game.i + 1}回</span><span class="kind">${q.kind}</span>${q.sub ? `<span class="kind team">${q.sub}</span>` : ""}</div>
-        <p class="subject">${q.name}</p>
-        <div class="reading">${q.yomi}</div>
-        <p class="ask">${ask}</p>
-        <div class="hint-row"><button class="hint-btn" id="hint-btn">ヒントを見る</button><span class="hint" id="hint" hidden>${P[q.pref].region}だよ</span></div>
-      </div>
-      <div class="choices">
-        ${game.choices.map((c, k) => `<button class="choice" id="choice-${k}" data-k="${k}"><b>${c.name}</b><span>${c.yomi}</span></button>`).join("")}
-      </div>
-      <div id="call"></div>
+function callHtml() {
+  const s = me();
+  const q = game.q;
+  const p = P[q.pref];
+  const ok = game.lastOk;
+  const hitWords = ["ヒット！", "ツーベース！", "ホームラン！", "タイムリー！", "ナイスバッティング！"];
+  const title = ok ? game.hitWord : (game.mode === "trip" ? "おしい！もう一回" : "おしい、アウト！");
+  const verb = q.kind === "選手" || q.kind === "メジャー" || q.kind === "道のり" ? "出身" : "";
+  const missName = !ok && P[game.choices[game.picked].name] ? game.choices[game.picked].name : null;
+  let mapOpts = { on: q.pref, miss: missName };
+  if (game.mode === "trip") mapOpts.done = PREFS.slice(0, game.tripIdx).map(x => x.name);
+  else mapOpts.got = s.stamps;
+  let next = "つぎのバッター";
+  if (game.mode === "trip") next = ok ? (s.trip >= 47 ? "ゴール！" : "つぎの都道府県へ") : "もう一回チャレンジ";
+  else if (game.mode !== "free" && game.i === 8) next = "しあい終了！けっかを見る";
+  return `
+    <div class="call ${ok ? "hit" : ""}" id="call">
+      <h2>${title}</h2>
+      ${q.kind === "道のり" ? `<p>こたえは <b>${esc(q.answer)}</b>。${esc(q.name)}は ${p.name}（${p.yomi}）出身だよ。${ok ? "スタンプゲット！" : ""}</p>` : `<p>${esc(q.name)}は <b>${p.name}</b>（${p.yomi}）${verb}だよ。${ok ? "スタンプゲット！" : ""}</p>`}
+      ${ok || game.mode !== "trip" ? `<p class="fact">${q.rare ? `<span class="rare">びっくり記録</span>` : ""}${esc(q.fact)}</p>` : `<p class="fact">地図で場所をたしかめてから、もう一回やってみよう。</p>`}
+      ${q.path ? `<p class="mlb"><b>道のり</b>　${q.path.map(esc).join(" → ")}</p>` : q.mlb && (ok || game.mode !== "trip") ? `<p class="mlb"><b>メジャーにも行ったよ</b>　${esc(q.mlb)}</p>` : ""}
+      ${q.kind !== "名産" ? `<div class="meisan">${p.name}の名産：${MEISAN[p.name].map(m => `<em>${m}</em>`).join("")}</div>` : ""}
+      ${mapSvg(mapOpts)}
+      <button class="primary" id="next-btn">${next}</button>
+      ${game.mode === "free" ? `<button class="ghost" id="quit-btn">ここでおわる</button>` : ""}
     </div>`;
-  $("hint-btn").addEventListener("click", () => { $("hint").hidden = false; $("hint-btn").hidden = true; });
-  stage.querySelectorAll(".choice").forEach(b => b.addEventListener("click", () => answer(+b.dataset.k)));
 }
 
 function answer(k) {
   if (game.answered) return;
-  game.answered = true;
-  const q = game.qs[game.i];
-  const picked = game.choices[k];
-  const ok = picked.name === q.pref;
-  game.results.push(ok);
-  if (ok) { stamps.add(q.pref); saveStamps(); }
-  stage.querySelectorAll(".choice").forEach((b, j) => {
-    b.disabled = true;
-    if (game.choices[j].name === q.pref) b.classList.add("right");
-    else if (j === k) b.classList.add("wrong");
-  });
-  const p = P[q.pref];
-  const isLast = game.i === 8;
-  const hitWords = ["ヒット！", "ツーベース！", "ホームラン！", "タイムリー！"];
-  const title = ok ? hitWords[Math.floor(Math.random() * hitWords.length)] : "おしい、アウト！";
-  $("call").innerHTML = `
-    <div class="call ${ok ? "hit" : ""}">
-      <h2>${title}</h2>
-      <p>${q.name}は <b>${p.name}</b>（${p.yomi}）${q.kind === "選手" ? "出身" : ""}だよ。${ok ? "スタンプゲット！" : ""}</p>
-      <p class="fact">${q.rare ? `<span class="rare">びっくり記録</span>` : ""}${q.fact}</p>
-      <button class="next" id="next-btn">${isLast ? "しあい終了！けっかを見る" : "つぎのバッター"}</button>
-    </div>`;
-  drawBoard();
-  $("next-btn").focus({ preventScroll: true });
-  $("next-btn").addEventListener("click", () => {
-    if (isLast) return showResult();
-    game.i++;
-    showQuestion();
-  });
+  const s = me();
+  const ok = game.choices[k].name === game.q.answer;
+  game.answered = true; game.picked = k; game.lastOk = ok;
+  game.hitWord = pick(["ヒット！", "ツーベース！", "ホームラン！", "タイムリー！", "ナイスバッティング！"]);
+  if (ok) addStamp(game.q.pref);
+  if (game.mode === "free") {
+    game.n++; if (ok) { game.ok++; game.streak++; } else game.streak = 0;
+    if (game.streak > s.bestStreak) s.bestStreak = game.streak;
+  } else if (game.mode === "trip") {
+    if (ok) s.trip++;
+  } else {
+    game.results.push(ok);
+  }
+  persist();
+  renderGame();
 }
 
-function showResult() {
-  game.over = true;
-  drawBoard();
+function afterCall() {
+  const s = me();
+  if (game.mode === "trip") {
+    if (s.trip >= 47) { s.trip = 0; s.tripClears++; persist(); game.over = true; game.tripDone = true; return render(); }
+    return nextQuestion();
+  }
+  if (game.mode === "free") return nextQuestion();
+  if (game.i === 8) {
+    game.over = true;
+    const score = game.results.filter(Boolean).length;
+    if (s.best[game.mode] == null || score > s.best[game.mode]) { s.best[game.mode] = score; game.newBest = true; }
+    persist();
+    return render();
+  }
+  game.i++;
+  nextQuestion();
+}
+
+function renderResult() {
+  const s = me();
+  if (game.tripDone) {
+    app.innerHTML = `<div class="result">
+      <div class="big">日本一周</div>
+      <h2>ゴール！おめでとう、${esc(s.name)}！</h2>
+      <p>47都道府県ぜんぶ旅したよ。これで ${s.tripClears}周め クリア！</p>
+      ${mapSvg({ done: PREFS.map(p => p.name), label: false })}
+      <div class="row"><button class="primary" id="again">もう一周する</button><button class="ghost" id="home">モードをえらぶ</button></div>
+    </div>`;
+    document.getElementById("again").onclick = () => startGame("trip");
+    document.getElementById("home").onclick = () => { game = null; render(); };
+    return;
+  }
   const score = game.results.filter(Boolean).length;
   const msg = score === 9 ? ["パーフェクトゲーム！", "9回ぜんぶせいかい。もう都道府県のエースだね。"]
     : score >= 7 ? ["だいしょうり！", "あと少しでパーフェクト。まちがえた県をもう一回おぼえよう。"]
     : score >= 4 ? ["ナイスゲーム！", "いい打線だった！くりかえすと、どんどん点がとれるよ。"]
     : ["つぎは逆転だ！", "まずはヒントを見ながらでOK。地方から考えてみよう。"];
-  const missed = game.qs.filter((q, i) => !game.results[i]);
-  stage.innerHTML = `
-    <div class="result">
-      <div class="big">${score}点</div>
-      <h2>${msg[0]}</h2>
-      <p>${msg[1]}</p>
-      ${missed.length ? `<p>おさらい：${missed.map(q => `${q.name} → <b style="color:var(--chalk)">${q.pref}</b>`).join("、")}</p>` : ""}
-      <p>スタンプ帳 ${stamps.size} / 47</p>
-      <div class="row">
-        <button class="next" id="again">もう一回（おなじモード）</button>
-        <button class="ghost" id="home">モードをえらぶ</button>
-        <button class="ghost" id="to-book">スタンプ帳を見る</button>
-      </div>
-    </div>`;
-  $("again").addEventListener("click", () => startGame(game.mode));
-  $("home").addEventListener("click", showStart);
-  $("to-book").addEventListener("click", () => setTab("book"));
+  app.innerHTML = boardHtml() + `<div class="result">
+    <div class="big">${score}点</div>
+    <h2>${msg[0]}</h2>
+    <p>${msg[1]}${game.newBest ? "　ベスト記録こうしん！" : ""}</p>
+    <p>スタンプ帳 ${s.stamps.length} / 47</p>
+    <div class="row"><button class="primary" id="again">もう一回</button><button class="ghost" id="home">モードをえらぶ</button><button class="ghost" id="to-book">スタンプ帳</button></div>
+  </div>`;
+  document.getElementById("again").onclick = () => startGame(game.mode);
+  document.getElementById("home").onclick = () => { game = null; render(); };
+  document.getElementById("to-book").onclick = () => { game = null; view = "book"; render(); };
 }
 
-function drawBook(confirming) {
-  const v = $("view-book");
-  v.innerHTML = `
-    <div class="book-head"><h2>都道府県スタンプ帳</h2><span class="count">${stamps.size} / 47</span></div>
-    <p class="intro">せいかいした都道府県にボールのスタンプがつくよ。47こ ぜんぶ集めたら 日本一！</p>
-    ${REGIONS.map(r => `
-      <div class="region">
-        <h3>${r}</h3>
-        <div class="cells">${PREFS.filter(p => p.region === r).map(p => `<div class="cell ${stamps.has(p.name) ? "got" : ""}"><b>${p.name}</b><span>${p.yomi}</span></div>`).join("")}</div>
-      </div>`).join("")}
-    ${confirming
-      ? `<div class="confirm">スタンプを ぜんぶ消しますか？ <button class="ghost reset" id="reset-yes">消す</button><button class="ghost reset" id="reset-no">やめる</button></div>`
-      : `<button class="ghost reset" id="reset">スタンプをリセット</button>`}`;
-  if (confirming) {
-    $("reset-yes").addEventListener("click", () => { stamps = new Set(); saveStamps(); drawBook(false); });
-    $("reset-no").addEventListener("click", () => drawBook(false));
-  } else {
-    $("reset").addEventListener("click", () => drawBook(true));
-  }
+function renderBook() {
+  const s = me();
+  const regions = [...new Set(PREFS.map(p => p.region))];
+  app.innerHTML = `
+    <div class="book-head"><h2 class="sec">${esc(s.name)}のスタンプ帳</h2><span class="count">${s.stamps.length} / 47</span></div>
+    <p class="muted">せいかいした都道府県が地図にぬられていくよ。47こ ぜんぶ集めたら 日本一！</p>
+    ${mapSvg({ got: s.stamps, label: false })}
+    <div class="legend"><span><i style="background:#6f8f5a"></i>スタンプあり</span><span><i style="background:var(--land)"></i>まだ</span></div>
+    ${regions.map(r => `
+      <div class="region"><h3>${r}</h3>
+        <div class="cells">${PREFS.filter(p => p.region === r).map(p => `<div class="cell ${s.stamps.includes(p.name) ? "got" : ""}"><b>${p.name}</b><span>${p.yomi}</span><span>${MEISAN[p.name].join("・")}</span></div>`).join("")}</div>
+      </div>`).join("")}`;
 }
 
-function setTab(t) {
-  $("tab-play").setAttribute("aria-selected", t === "play");
-  $("tab-book").setAttribute("aria-selected", t === "book");
-  $("view-play").hidden = t !== "play";
-  $("view-book").hidden = t !== "book";
-  if (t === "book") drawBook(false);
-  if (t === "play" && (!game || game.over)) showStart();
-}
-$("tab-play").addEventListener("click", () => setTab("play"));
-$("tab-book").addEventListener("click", () => setTab("book"));
+render();
 
-showStart();
 </script>
 
 </body>
