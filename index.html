@@ -60,10 +60,10 @@ h1{font-size:1.15rem;margin:0;font-weight:700;letter-spacing:.02em}
 .dial.fin .prog{stroke:var(--done)}
 .dial .ticks line{stroke:var(--muted);opacity:.45}
 .face{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:1cqw;padding:14%}
-.face .lbl{font-size:5.4cqw;color:var(--muted);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.face .big{font-family:var(--f-num);font-weight:400;font-size:17cqw;line-height:1.05;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.face .lbl{font-size:5.4cqw;font-weight:700;color:var(--muted);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.face .big{font-family:var(--f-num);font-weight:700;font-size:17cqw;line-height:1.05;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
 .face .big small{font-size:.45em;color:var(--muted)}
-.face .sub{font-family:var(--f-num);font-size:4.8cqw;color:var(--muted);font-variant-numeric:tabular-nums}
+.face .sub{font-family:var(--f-num);font-size:4.8cqw;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
 .dial.warn .big{color:var(--warn)}
 .dial.fin .big{color:var(--done)}
 .pill{display:inline-block;font-size:4.4cqw;padding:.1em .9em;border-radius:999px;background:var(--warn-soft);color:var(--warn);font-weight:700;letter-spacing:.04em}
@@ -153,6 +153,9 @@ body.stage .seg.small{font-size:clamp(.85rem,2vh,1.3rem)}
         <span id="zVal">100%</span>
         <button class="vb" id="zIn" aria-label="大きくする">A＋</button>
         <button class="vb" id="stageBtn" aria-pressed="false">大画面</button>
+      </div>
+      <div class="voice"><label for="volR">音量</label>
+        <input type="range" id="volR" min="0" max="100" step="5" value="50" style="width:90px;accent-color:var(--accent)">
       </div>
       <div class="voice">音声
         <button class="switch" id="voiceSw" role="switch" aria-checked="true" aria-label="音声アナウンス"></button>
@@ -328,28 +331,36 @@ const segName=(seg,i)=>seg.label&&seg.label.trim()?seg.label.trim():`区間${i+1
 /* ---------- sound & voice ---------- */
 let AC=null;
 function ensureAudio(){try{if(!AC)AC=new (window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();}catch(e){}}
-function beep(freq,count,len){
+/* soft chime: sine with a gentle octave overtone, slow attack, long fade */
+function chime(notes,gap){
   if(!AC)return;
-  for(let i=0;i<count;i++){
-    const t=AC.currentTime+i*(len+0.12);
-    const o=AC.createOscillator(),g=AC.createGain();
-    o.type='sine';o.frequency.value=freq;
-    g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(0.35,t+0.02);
-    g.gain.exponentialRampToValueAtTime(0.0001,t+len);
-    o.connect(g).connect(AC.destination);o.start(t);o.stop(t+len+0.05);
-  }
+  const vol=(typeof S.vol==='number'?S.vol:0.5);
+  if(vol<=0)return;
+  const peak=0.16*vol;
+  notes.forEach((f,i)=>{
+    const t=AC.currentTime+0.02+i*gap;
+    [[f,1],[f*2,0.18]].forEach(([freq,amt])=>{
+      const o=AC.createOscillator(),g=AC.createGain();
+      o.type='sine';o.frequency.value=freq;
+      g.gain.setValueAtTime(0.0001,t);
+      g.gain.linearRampToValueAtTime(peak*amt,t+0.04);
+      g.gain.exponentialRampToValueAtTime(0.0001,t+1.6);
+      o.connect(g).connect(AC.destination);o.start(t);o.stop(t+1.7);
+    });
+  });
 }
+const C5=523.25,E5=659.25,G5=783.99,C6=1046.5;
 function speak(text){
   if(!S.voice||!('speechSynthesis' in window))return;
-  try{const u=new SpeechSynthesisUtterance(text);u.lang='ja-JP';u.rate=1.05;
+  try{const u=new SpeechSynthesisUtterance(text);u.lang='ja-JP';u.rate=1.0;u.volume=Math.max(0.1,typeof S.vol==='number'?S.vol:0.5);
     const v=speechSynthesis.getVoices().find(v=>/^ja/i.test(v.lang));if(v)u.voice=v;
     speechSynthesis.speak(u);}catch(e){}
 }
 function announce(kind,text){
-  if(kind==='warn')beep(880,2,0.14);
-  else if(kind==='end')beep(660,3,0.18);
-  else beep(520,1,0.9);
-  setTimeout(()=>speak(text),kind==='fin'?900:450);
+  if(kind==='warn')chime([E5,C5],0.45);
+  else if(kind==='end')chime([C5,E5,G5],0.35);
+  else chime([C5,E5,G5,C6],0.38);
+  setTimeout(()=>speak(text),kind==='fin'?1800:kind==='end'?1300:1000);
 }
 let wake=null;
 async function keepAwake(on){
@@ -385,6 +396,10 @@ const voiceSw=$('#voiceSw');
 function paintVoice(){voiceSw.setAttribute('aria-checked',S.voice)}
 voiceSw.onclick=()=>{S.voice=!S.voice;save();paintVoice();if(!S.voice)try{speechSynthesis.cancel()}catch(e){}};
 paintVoice();
+if(typeof S.vol!=='number')S.vol=0.5;
+$('#volR').value=Math.round(S.vol*100);
+$('#volR').addEventListener('input',e=>{S.vol=e.target.value/100;save();});
+$('#volR').addEventListener('change',()=>{ensureAudio();chime([E5,C5],0.45);});
 
 /* =========================================================
    TIMER (sessions)
@@ -699,7 +714,7 @@ function alarmTick(){
   });
   if(ringing){
     if(Date.now()>ringing.until)stopRing();
-    else if(sec%2===0)beep(880,3,0.12);
+    else if(sec%5===0)chime([G5,E5],0.45);
   }
   updateAl(false);
 }
