@@ -45,6 +45,7 @@ h1{font-size:1.15rem;margin:0;font-weight:700;letter-spacing:.02em}
 .switch[aria-checked="true"]::after{transform:translateX(18px);background:var(--accent-ink)}
 
 .seg{display:grid;grid-template-columns:1fr 1fr;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px;gap:4px}
+.seg.tabs{grid-template-columns:repeat(3,1fr)}
 .seg button{border:0;background:none;border-radius:999px;padding:8px 10px;font-weight:500;color:var(--muted)}
 .seg button[aria-selected="true"]{background:var(--ink);color:var(--bg)}
 .seg.small{display:inline-grid;font-size:.85rem}
@@ -116,6 +117,12 @@ h2{font-size:.78rem;letter-spacing:.12em;color:var(--muted);margin:0;font-weight
 .laps div span:not(:first-child){text-align:right}
 .laps .hd{color:var(--muted);font-family:var(--f-body);font-size:.75rem}
 .note{font-size:.78rem;color:var(--muted);text-align:center;margin:0}
+.arow{display:grid;grid-template-columns:auto minmax(0,1fr) 40px 32px;gap:8px;align-items:center}
+.tm{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 8px;font-family:var(--f-num);font-size:1.05rem;font-variant-numeric:tabular-nums}
+.arow.off .tm,.arow.off .txt{opacity:.5}
+.ring-bar{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;padding:14px;border-radius:12px;background:var(--warn-soft);color:var(--warn);font-weight:700;text-align:center}
+.ring-bar .btn{font-size:1.1rem}
+body.stage .ring-bar{font-size:clamp(1rem,3vh,2rem)}
 /* size controls & board (stage) mode */
 .view{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .vb{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:4px 10px;font-weight:700;min-width:40px}
@@ -153,9 +160,10 @@ body.stage .seg.small{font-size:clamp(.85rem,2vh,1.3rem)}
     </div>
   </header>
 
-  <div class="seg" role="tablist">
+  <div class="seg tabs" role="tablist">
     <button role="tab" id="tabTimer" aria-selected="true">タイマー</button>
     <button role="tab" id="tabSw" aria-selected="false">ストップウォッチ</button>
+    <button role="tab" id="tabAl" aria-selected="false">アラーム</button>
   </div>
 
   <!-- ===== TIMER ===== -->
@@ -253,6 +261,34 @@ body.stage .seg.small{font-size:clamp(.85rem,2vh,1.3rem)}
     </div>
     <p class="note hide-stage">カウントダウンでは終了1分前と終了時に音声でお知らせします。スペースキーで開始／停止できます。</p>
   </section>
+  <!-- ===== ALARM ===== -->
+  <section id="viewAl" hidden style="flex-direction:column;gap:18px">
+    <div class="panel">
+      <div class="dial" id="aDial">
+        <svg viewBox="0 0 200 200" aria-hidden="true">
+          <g class="ticks" id="aTicks"></g>
+          <circle class="track" cx="100" cy="100" r="88" stroke-width="8"/>
+          <circle class="prog" id="aProg" cx="100" cy="100" r="88" stroke-width="8" stroke-dasharray="552.9" stroke-dashoffset="552.9"/>
+        </svg>
+        <div class="face">
+          <div class="lbl" id="aDate">—</div>
+          <div class="big" id="aBig">00:00<small>:00</small></div>
+          <div class="sub" id="aNext"></div>
+          <div id="aPill"></div>
+        </div>
+      </div>
+      <div class="ring-bar" id="aRing" hidden>
+        <span id="aRingText">アラーム</span>
+        <button class="btn primary" id="aStop">アラームを止める</button>
+      </div>
+    </div>
+    <div class="editor hide-stage">
+      <div class="field"><label>アラーム（時刻・題名・オン／オフ）</label></div>
+      <div class="rows" id="aRows"></div>
+      <div class="quick"><button class="qb" id="aAdd">＋ アラームを追加</button></div>
+    </div>
+    <p class="note hide-stage">設定した時刻の1分前と、その時刻に音声でお知らせします。アラームはこのページを開いている間だけ鳴ります。音を鳴らすため、開いたら一度どこかをタップしてください。例のアラームは最初オフにしてあります。</p>
+  </section>
 </div>
 
 <script>
@@ -337,14 +373,14 @@ ticks($('#tTicks'));ticks($('#sTicks'));
 function showTab(t){
   $('#tabTimer').setAttribute('aria-selected',t==='timer');
   $('#tabSw').setAttribute('aria-selected',t==='sw');
-  $('#viewTimer').hidden=t!=='timer';$('#viewSw').hidden=t!=='sw';
-  $('#viewTimer').style.display=t==='timer'?'flex':'none';
-  $('#viewSw').style.display=t==='sw'?'flex':'none';
+  $('#tabAl').setAttribute('aria-selected',t==='al');
+  [['timer','#viewTimer'],['sw','#viewSw'],['al','#viewAl']].forEach(([k,id])=>{$(id).hidden=k!==t;$(id).style.display=k===t?'flex':'none';});
   tab=t;
 }
 let tab='timer';
 $('#tabTimer').onclick=()=>showTab('timer');
 $('#tabSw').onclick=()=>showTab('sw');
+$('#tabAl').onclick=()=>showTab('al');
 const voiceSw=$('#voiceSw');
 function paintVoice(){voiceSw.setAttribute('aria-checked',S.voice)}
 voiceSw.onclick=()=>{S.voice=!S.voice;save();paintVoice();if(!S.voice)try{speechSynthesis.cancel()}catch(e){}};
@@ -585,6 +621,107 @@ function updateSw(){
   }
 }
 
+/* =========================================================
+   ALARM (clock time)
+   ========================================================= */
+ticks($('#aTicks'));
+if(!Array.isArray(S.alarms))S.alarms=[
+  {id:uid(),time:'10:35',title:'1時間目終了',on:false},
+  {id:uid(),time:'12:25',title:'給食',on:false},
+  {id:uid(),time:'15:30',title:'下校準備',on:false}
+];
+const WD='日月火水木金土';
+const p2=n=>String(n).padStart(2,'0');
+const hm=d=>p2(d.getHours())+':'+p2(d.getMinutes());
+const dkey=d=>d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
+const fired=new Set();
+let ringing=null,lastSec=-1;
+function alName(a){return a.title&&a.title.trim()?a.title.trim():a.time+'のアラーム'}
+function renderAlarms(){
+  const box=$('#aRows');
+  if(!S.alarms.length){box.innerHTML='<div class="empty">アラームがありません。下のボタンで追加してください。</div>';return;}
+  box.innerHTML=S.alarms.map(a=>`
+    <div class="arow${a.on?'':' off'}" data-id="${a.id}">
+      <input class="tm" type="time" id="at-${a.id}" data-f="time" value="${a.time}" aria-label="時刻">
+      <input class="txt" id="an-${a.id}" data-f="title" value="${esc(a.title)}" placeholder="題名（例：授業終了）" aria-label="題名">
+      <button class="switch" role="switch" data-f="on" aria-checked="${a.on}" aria-label="オン／オフ"></button>
+      <button class="x" data-adel="${a.id}" aria-label="削除">×</button>
+    </div>`).join('');
+}
+$('#aRows').addEventListener('input',e=>{
+  const row=e.target.closest('.arow');if(!row)return;
+  const a=S.alarms.find(x=>x.id===row.dataset.id);if(!a)return;
+  if(e.target.dataset.f==='time'&&e.target.value)a.time=e.target.value;
+  if(e.target.dataset.f==='title')a.title=e.target.value;
+  save();updateAl(true);
+});
+$('#aRows').addEventListener('click',e=>{
+  const row=e.target.closest('.arow');if(!row)return;
+  const a=S.alarms.find(x=>x.id===row.dataset.id);
+  if(e.target.closest('[data-f=on]')){ensureAudio();a.on=!a.on;save();renderAlarms();updateAl(true);}
+  else if(e.target.closest('[data-adel]')){S.alarms=S.alarms.filter(x=>x.id!==a.id);save();renderAlarms();updateAl(true);}
+});
+$('#aAdd').onclick=()=>{
+  const d=new Date(Date.now()+5*60000);
+  const a={id:uid(),time:hm(d),title:'',on:true};
+  S.alarms.push(a);save();renderAlarms();updateAl(true);
+  const t=document.getElementById('an-'+a.id);if(t)t.focus();
+};
+function startRing(a){
+  ringing={name:alName(a),until:Date.now()+60000};
+  $('#aRingText').textContent=`${a.time}　${ringing.name}`;
+  $('#aRing').hidden=false;
+  if(tab!=='al')showTab('al');
+  announce('fin',`${ringing.name}の時間です`);
+}
+function stopRing(){ringing=null;$('#aRing').hidden=true;try{speechSynthesis.cancel()}catch(e){}updateAl(true);}
+$('#aStop').onclick=stopRing;
+function nextAlarm(now){
+  let best=null;
+  S.alarms.forEach(a=>{
+    if(!a.on||!a.time)return;
+    const [h,m]=a.time.split(':').map(Number);
+    const t=new Date(now);t.setHours(h,m,0,0);
+    if(t<=now)t.setDate(t.getDate()+1);
+    if(!best||t<best.t)best={a,t};
+  });
+  return best;
+}
+function alarmTick(){
+  const now=new Date(),sec=now.getSeconds();
+  if(sec===lastSec)return;lastSec=sec;
+  const cur=hm(now),ahead=hm(new Date(now.getTime()+60000)),dk=dkey(now);
+  S.alarms.forEach(a=>{
+    if(!a.on)return;
+    const k=dk+a.id+a.time;
+    if(a.time===ahead&&!fired.has('w'+k)){fired.add('w'+k);announce('warn',`${alName(a)}まで、あと1分です`);}
+    if(a.time===cur&&!fired.has('r'+k)){fired.add('r'+k);fired.add('w'+k);startRing(a);}
+  });
+  if(ringing){
+    if(Date.now()>ringing.until)stopRing();
+    else if(sec%2===0)beep(880,3,0.12);
+  }
+  updateAl(false);
+}
+function updateAl(force){
+  if(tab!=='al'&&!force)return;
+  const now=new Date(),dial=$('#aDial');
+  $('#aBig').innerHTML=`${p2(now.getHours())}:${p2(now.getMinutes())}<small>:${p2(now.getSeconds())}</small>`;
+  $('#aDate').textContent=`${now.getMonth()+1}月${now.getDate()}日（${WD[now.getDay()]}）`;
+  const nx=nextAlarm(now);
+  if(nx){
+    const mins=Math.ceil((nx.t-now)/60000);
+    const left=mins>=60?`${Math.floor(mins/60)}時間${mins%60?mins%60+'分':''}`:`${mins}分`;
+    $('#aNext').textContent=`次 ${nx.a.time} ${alName(nx.a)}（あと${left}）`;
+  }else $('#aNext').textContent='オンのアラームはありません';
+  const soon=nx&&nx.t-now<=60000;
+  $('#aPill').innerHTML=ringing?'<span class="pill">アラーム</span>':soon?'<span class="pill">まもなく</span>':'';
+  dial.className='dial'+(ringing?' fin':soon?' warn':'');
+  $('#aProg').style.strokeDashoffset=C*(1-now.getSeconds()/60);
+}
+document.addEventListener('pointerdown',ensureAudio,{once:true});
+renderAlarms();
+
 /* ---------- size & stage ---------- */
 const Z_MIN=0.6,Z_MAX=2.5;
 if(typeof S.zoom!=='number')S.zoom=1;
@@ -617,10 +754,10 @@ document.addEventListener('keydown',e=>{
 applyZoom();
 
 /* ---------- loop & keys ---------- */
-setInterval(()=>{timerTick();swTick();if(running())updateTimer();if(wRun()||W.done)updateSw();},50);
+setInterval(()=>{timerTick();swTick();alarmTick();if(running())updateTimer();if(wRun()||W.done)updateSw();},50);
 document.addEventListener('keydown',e=>{
   if(e.code!=='Space'||/INPUT|TEXTAREA|BUTTON/.test(document.activeElement.tagName))return;
-  e.preventDefault();(tab==='timer'?$('#tStart'):$('#sStart')).click();
+  e.preventDefault();if(tab==='al'){if(ringing)stopRing();return;}(tab==='timer'?$('#tStart'):$('#sStart')).click();
 });
 if('speechSynthesis' in window)try{speechSynthesis.getVoices();speechSynthesis.onvoiceschanged=()=>{}}catch(e){}
 
