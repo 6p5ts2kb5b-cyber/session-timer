@@ -143,17 +143,19 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--lamp); outl
 
 /* map */
 .map { background: var(--board-cell); border-radius: 10px; padding: 6px; }
-.map svg { display: block; width: 100%; height: auto; max-height: 420px; }
-.map path { fill: var(--land); stroke: var(--board-deep); stroke-width: 2; stroke-linejoin: round; }
+.map svg { display: block; width: 100%; height: auto; }
+.map-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 11px; color: var(--chalk-dim); padding: 4px 4px 0; }
+.map path { fill: var(--land); stroke: var(--board-deep); stroke-width: 1.2; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
 .map path.got { fill: #6f8f5a; }
 .map path.done { fill: var(--dirt); }
 .map path.on { fill: var(--lamp); }
 .map path.miss { fill: var(--stitch); }
-.map .inset { fill: none; stroke: var(--line); stroke-width: 2; stroke-dasharray: 8 6; }
-.map .ring { fill: none; stroke: var(--lamp); stroke-width: 5; }
+.map .inset { fill: none; stroke: var(--line); stroke-width: 1.5; stroke-dasharray: 6 5; vector-effect: non-scaling-stroke; }
+.map .ring { fill: none; stroke: var(--lamp); stroke-width: 3; vector-effect: non-scaling-stroke; }
 .map .ring.pulse { animation: pulse 1.4s ease-out infinite; transform-box: fill-box; transform-origin: center; }
-.map text { font-family: var(--f-body); font-weight: 900; font-size: 44px; fill: var(--chalk); stroke: var(--board-deep); stroke-width: 10px; paint-order: stroke; }
-.map .credit { font-size: 22px; font-weight: 500; fill: var(--chalk-dim); stroke: none; }
+.map text { font-family: var(--f-body); font-weight: 900; fill: var(--chalk); stroke: var(--board-deep); stroke-width: 5px; paint-order: stroke; vector-effect: non-scaling-stroke; }
+.modes.small { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+.modes.small .mode b { font-size: 17px; }
 @keyframes pulse { from { transform: scale(.6); opacity: 1; } to { transform: scale(1.6); opacity: 0; } }
 
 .result { text-align: center; display: flex; flex-direction: column; gap: 10px; align-items: center; padding-block: 8px; }
@@ -489,7 +491,13 @@ const ASK = {
 
 const AREAS = {
   free:  { label: "フリーモード", desc: "全国から好きなだけ", regions: null },
-  kanto: { label: "関東モード", desc: "関東の7都県で9回勝負", regions: ["関東地方"] },
+  tohoku: { label: "北海道・東北", desc: "北海道と東北の7道県", regions: ["北海道地方", "東北地方"] },
+  kanto: { label: "関東", desc: "関東の7都県", regions: ["関東地方"] },
+  chubu: { label: "中部", desc: "中部の9県", regions: ["中部地方"] },
+  kinki: { label: "近畿", desc: "近畿の7府県", regions: ["近畿地方"] },
+  chugoku: { label: "中国", desc: "中国地方の5県", regions: ["中国地方"] },
+  shikoku: { label: "四国", desc: "四国の4県", regions: ["四国地方"] },
+  kyushu: { label: "九州・沖縄", desc: "九州と沖縄の8県", regions: ["九州地方"] },
   east:  { label: "東日本モード", desc: "北海道・東北・関東・中部", regions: ["北海道地方", "東北地方", "関東地方", "中部地方"] },
   west:  { label: "西日本モード", desc: "近畿・中国・四国・九州・沖縄", regions: ["近畿地方", "中国地方", "四国地方", "九州地方"] }
 };
@@ -521,30 +529,86 @@ const me = () => save.current != null ? save.slots[save.current] : null;
 const addStamp = pref => { const s = me(); if (s && !s.stamps.includes(pref)) s.stamps.push(pref); };
 
 // ---------- 地図 ----------
-function mapSvg({ got = [], done = [], on = null, miss = null, label = true } = {}) {
-  const pad = 16;
-  const vb = `${-pad} ${-pad} ${MAP.w + pad * 2} ${MAP.h + pad * 2}`;
+const FULL = [-16, -16, MAP.w + 32, MAP.h + 32];
+const BOX = {};
+for (const [n, d] of Object.entries(MAP.paths)) {
+  const nums = d.match(/-?[\d.]+/g).map(Number);
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (let i = 0; i < nums.length; i += 2) { x0 = Math.min(x0, nums[i]); x1 = Math.max(x1, nums[i]); y0 = Math.min(y0, nums[i + 1]); y1 = Math.max(y1, nums[i + 1]); }
+  BOX[n] = [x0, y0, x1, y1];
+}
+// 答えの県がある地方までよる
+function zoomBox(pref) {
+  let names;
+  if (pref === "沖縄県") { const [a, b, c, d] = MAP.inset; return fitAspect([a, b, c, d], 0.04); }
+  const reg = P[pref].region;
+  names = PREFS.filter(p => p.region === reg && p.name !== "沖縄県").map(p => p.name);
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const n of names) { const [a, b, c, d] = BOX[n]; x0 = Math.min(x0, a); y0 = Math.min(y0, b); x1 = Math.max(x1, c); y1 = Math.max(y1, d); }
+  if (reg === "九州地方") y1 = Math.min(y1, BOX["鹿児島県"][1] + (BOX["宮崎県"][3] - BOX["宮崎県"][1]) * 1.25);
+  return fitAspect([x0, y0, x1, y1], 0.12);
+}
+function fitAspect([x0, y0, x1, y1], padFrac) {
+  let w = x1 - x0, h = y1 - y0;
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+  w *= 1 + padFrac * 2; h *= 1 + padFrac * 2;
+  const ar = FULL[2] / FULL[3];
+  if (w / h > ar) h = w / ar; else w = h * ar;
+  if (w < 300) { w = 300; h = w / ar; }
+  return [cx - w / 2, cy - h / 2, w, h];
+}
+
+function mapSvg({ got = [], done = [], on = null, miss = null, label = true, zoom = false } = {}) {
+  const target = zoom && on ? zoomBox(on) : FULL;
+  const tw = target[2];
   const paths = Object.entries(MAP.paths).map(([n, d]) => {
     const cls = n === on ? "on" : n === miss ? "miss" : done.includes(n) ? "done" : got.includes(n) ? "got" : "";
     return `<path d="${d}" class="${cls}"><title>${n}</title></path>`;
   }).join("");
   const [ix0, iy0, ix1, iy1] = MAP.inset;
+  const r = tw * 0.028, fs = tw * 0.055;
   let marks = "";
   for (const [n, pulse] of [[miss, false], [on, true]]) {
     if (!n) continue;
     const [x, y] = MAP.cen[n];
-    marks += `<circle class="ring" cx="${x}" cy="${y}" r="26" style="stroke:${n === miss ? "var(--stitch)" : "var(--lamp)"}"/>`;
-    if (pulse) marks += `<circle class="ring pulse" cx="${x}" cy="${y}" r="26"/>`;
+    marks += `<circle class="ring" cx="${x}" cy="${y}" r="${r}" style="stroke:${n === miss ? "var(--stitch)" : "var(--lamp)"}"/>`;
+    if (pulse) marks += `<circle class="ring pulse" cx="${x}" cy="${y}" r="${r}"/>`;
     if (label) {
-      const right = x < MAP.w * 0.55;
-      marks += `<text x="${right ? x + 40 : x - 40}" y="${y + 14}" text-anchor="${right ? "start" : "end"}">${n}</text>`;
+      const right = x < target[0] + target[2] * 0.6;
+      marks += `<text x="${right ? x + r * 1.5 : x - r * 1.5}" y="${y + fs * 0.35}" text-anchor="${right ? "start" : "end"}" font-size="${fs}">${n}</text>`;
     }
   }
-  return `<div class="map"><svg viewBox="${vb}" role="img" aria-label="日本地図">
+  const zoomAttr = zoom && on ? ` data-zoom="${target.map(v => v.toFixed(1)).join(" ")}"` : "";
+  return `<div class="map"><svg viewBox="${FULL.join(" ")}"${zoomAttr} role="img" aria-label="日本地図">
     <rect class="inset" x="${ix0}" y="${iy0}" width="${ix1 - ix0}" height="${iy1 - iy0}" rx="10"/>
     ${paths}${marks}
-    <text class="credit" x="${MAP.w}" y="${MAP.h + 8}" text-anchor="end">地図：地球地図日本（国土地理院）をもとに作成</text>
-  </svg></div>`;
+  </svg><div class="map-foot"><span>地図：地球地図日本（国土地理院）をもとに作成</span>${zoomAttr ? `<button class="ghost small" data-zoomtoggle>全国を見る</button>` : ""}</div></div>`;
+}
+
+// 全国 → 地方へ自動でズーム
+function animateMaps(root) {
+  const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  root.querySelectorAll("svg[data-zoom]").forEach(svg => {
+    const to = svg.dataset.zoom.split(" ").map(Number);
+    const btn = svg.parentElement.querySelector("[data-zoomtoggle]");
+    let cur = FULL.slice(), zoomed = false, raf = 0;
+    const set = v => { cur = v; svg.setAttribute("viewBox", v.map(n => n.toFixed(1)).join(" ")); };
+    const go = (target, ms) => {
+      cancelAnimationFrame(raf);
+      if (reduce || ms === 0) return set(target);
+      const from = cur.slice(), t0 = performance.now();
+      const step = now => {
+        const t = Math.min(1, (now - t0) / ms), e = t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+        set(from.map((f, i) => f + (target[i] - f) * e));
+        if (t < 1) raf = requestAnimationFrame(step);
+      };
+      raf = requestAnimationFrame(step);
+    };
+    const zoomIn = () => { zoomed = true; if (btn) btn.textContent = "全国を見る"; go(to, 900); };
+    const zoomOut = () => { zoomed = false; if (btn) btn.textContent = "ちかくで見る"; go(FULL, 700); };
+    if (btn) btn.onclick = () => zoomed ? zoomOut() : zoomIn();
+    setTimeout(zoomIn, reduce ? 0 : 450);
+  });
 }
 
 // ---------- 画面 ----------
@@ -631,9 +695,15 @@ function renderHome() {
       <div class="modes">
         <button class="mode trip" data-mode="trip"><b>日本一周</b><span>北海道から沖縄まで、47都道府県を1つずつ旅しよう（いま ${s.trip}/47${s.tripClears ? `・${s.tripClears}周クリア` : ""}）</span></button>
         <button class="mode" data-mode="free"><b>フリーモード</b><span>全国から好きなだけ</span>${s.bestStreak ? `<span class="best">さいこう ${s.bestStreak}れんぞく</span>` : ""}</button>
-        <button class="mode" data-mode="kanto"><b>関東モード</b><span>関東の7都県で9回勝負</span>${best("kanto")}</button>
         <button class="mode" data-mode="east"><b>東日本モード</b><span>北海道・東北・関東・中部</span>${best("east")}</button>
         <button class="mode" data-mode="west"><b>西日本モード</b><span>近畿・中国・四国・九州・沖縄</span>${best("west")}</button>
+      </div>
+    </div>
+    <div class="stack">
+      <h2 class="sec">地方モード</h2>
+      <p class="muted">えらんだ地方だけで9回勝負。こたえの選択肢もその地方から出るよ。</p>
+      <div class="modes small">
+        ${["tohoku", "kanto", "chubu", "kinki", "chugoku", "shikoku", "kyushu"].map(id => `<button class="mode" data-mode="${id}"><b>${AREAS[id].label}</b><span>${AREAS[id].desc}</span>${best(id)}</button>`).join("")}
       </div>
     </div>
     <div class="stack">
@@ -680,7 +750,7 @@ function nextQuestion() {
   if (!qs.length) qs = questionsFor(pref, ["school", "meisan"]);
   game.q = pick(qs);
   game.q.answer = game.q.answer || pref;
-  const pool = game.mode === "kanto" ? game.pool : null;
+  const pool = game.mode === "free" ? null : game.pool;
   game.choices = game.q.options ? game.q.options.map(n => ({ name: n, yomi: "" })) : makeChoices(pref, pool);
   game.answered = false;
   game.picked = null;
@@ -717,7 +787,7 @@ function boardHtml() {
   return `<div class="board"><div class="board-scroll"><table>
     <thead><tr>${head}</tr></thead>
     <tbody><tr><td class="name">${esc(s.name)}</td>${cells}<td class="total">${total}</td></tr></tbody>
-  </table></div><div class="board-meta"><span>${AREAS[game.mode].label}：${AREAS[game.mode].desc}</span><span>1問せいかいで1点</span></div></div>`;
+  </table></div><div class="board-meta"><span>${AREAS[game.mode].label}${AREAS[game.mode].label.endsWith("モード") ? "" : "モード"}：${AREAS[game.mode].desc}</span><span>1問せいかいで1点</span></div></div>`;
 }
 
 function renderGame() {
@@ -756,6 +826,7 @@ function renderGame() {
     nb.focus({ preventScroll: true });
     const qb = document.getElementById("quit-btn");
     if (qb) qb.onclick = () => { game = null; render(); };
+    animateMaps(app);
     document.getElementById("call").scrollIntoView({ behavior: "smooth", block: "start" });
   }
 }
@@ -769,7 +840,7 @@ function callHtml() {
   const title = ok ? game.hitWord : (game.mode === "trip" ? "おしい！もう一回" : "おしい、アウト！");
   const verb = q.kind === "選手" || q.kind === "メジャー" || q.kind === "道のり" ? "出身" : "";
   const missName = !ok && P[game.choices[game.picked].name] ? game.choices[game.picked].name : null;
-  let mapOpts = { on: q.pref, miss: missName };
+  let mapOpts = { on: q.pref, miss: missName && P[missName].region === p.region ? missName : null, zoom: true };
   if (game.mode === "trip") mapOpts.done = PREFS.slice(0, game.tripIdx).map(x => x.name);
   else mapOpts.got = s.stamps;
   let next = "つぎのバッター";
