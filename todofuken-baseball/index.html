@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f2a1f">
 <title>都道府県ベースボール</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -220,7 +221,7 @@ select { font: inherit; font-weight: 700; background: var(--board); color: var(-
 .rec-nums { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .rec-nums div { background: var(--board-cell); border-radius: 6px; padding: 6px; text-align: center; }
 .rec-nums span { display: block; font-size: 12px; color: var(--chalk-dim); }
-.rec-nums b { font-variant-numeric: tabular-nums; }
+.rec-nums b { font-variant-numeric: tabular-nums; white-space: nowrap; font-size: clamp(12px, 3.6vw, 16px); }
 .lamp { color: var(--lamp); }
 .grow { margin: 0; font-weight: 700; color: var(--lamp); }
 .empty { background: var(--board); border: 2px dashed var(--line); border-radius: 12px; padding: 18px; text-align: center; }
@@ -242,22 +243,169 @@ select { font: inherit; font-weight: 700; background: var(--board); color: var(-
 .choice.right.shape-choice .shape path { fill: var(--board-deep); }
 .note { font-size: 12px; color: var(--chalk-dim); margin: 0; }
 
+
+/* ===== v2 shell ===== */
+:root { --paper: #f6f1df; --ink: #1d2a22; --pencil: #7c8a7f; --rule: #d9cfb3; }
+body { padding-block: 0 40px; }
+body.has-dock { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+.wrap { gap: 20px; }
+header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-block: 12px; background: linear-gradient(var(--board-deep) 78%, transparent); margin-inline: -16px; padding-inline: 16px; flex-wrap: nowrap; }
+.logo { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.logo svg { width: 30px; height: 30px; flex: none; }
+.logo { flex: 1 1 auto; }
+#head-right { flex: none; }
+.logo .ball { fill: var(--chalk); }
+.logo .seam { fill: none; stroke: var(--stitch); stroke-width: 1.6; stroke-dasharray: 2.2 1.6; }
+.logo h1 { overflow: hidden; text-overflow: ellipsis; font-size: clamp(16px, 4.6vw, 21px); line-height: 1.15; letter-spacing: .04em; white-space: nowrap; }
+.logo h1 small { font-size: 11px; letter-spacing: .12em; margin-bottom: 1px; }
+.who-chip { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-flex; align-items: center; gap: 8px; background: var(--board); color: var(--chalk); border: 2px solid var(--line); border-radius: 999px; padding: 4px 6px 4px 4px; font-weight: 700; font-size: 15px; max-width: 46vw; }
+.who-chip .order { background: var(--lamp); color: var(--board-deep); border-radius: 999px; padding: 2px 8px; font-size: 12px; }
+.who-chip .swapx { font-size: 11px; color: var(--chalk-dim); border-left: 1px solid var(--line); padding-left: 8px; padding-right: 6px; }
+
+.dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; display: grid; grid-template-columns: repeat(4, 1fr); background: var(--board-cell); border-top: 1px solid var(--line); padding: 6px 8px calc(8px + env(safe-area-inset-bottom, 0px)); }
+.dock button { background: none; border: 0; color: var(--chalk-dim); display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px; border-radius: 12px; font-weight: 700; font-size: 11px; }
+.dock svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.dock button[aria-current="page"] { color: var(--lamp); }
+.dock button[aria-current="page"] svg { stroke-width: 2.2; }
+@media (min-width: 720px) { .dock { left: 50%; right: auto; transform: translateX(-50%); width: 520px; bottom: 16px; border: 1px solid var(--line); border-radius: 20px; padding-bottom: 6px; box-shadow: 0 10px 30px rgba(0,0,0,.35); } }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+/* ===== lineup card (save slots) ===== */
+.lineup { background: var(--paper); color: var(--ink); border-radius: 6px 6px 18px 18px; padding: 20px 18px 16px; position: relative; box-shadow: 0 14px 0 -6px var(--dirt), 0 20px 40px rgba(0,0,0,.35); }
+.lineup::before { content: ""; position: absolute; top: -10px; left: 50%; width: 92px; height: 20px; transform: translateX(-50%); background: #a9a28b; border-radius: 6px; box-shadow: inset 0 -3px 0 rgba(0,0,0,.18); }
+.lineup-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; border-bottom: 3px double var(--ink); padding-bottom: 10px; }
+.lineup-head h2 { margin: 0; font-size: 26px; letter-spacing: .3em; }
+.lineup-head p { margin: 0; font-size: 14px; color: var(--pencil); font-weight: 700; }
+.lineup-rows { list-style: none; margin: 0; padding: 0; }
+.lrow { display: grid; grid-template-columns: 54px minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 72px; border-bottom: 1px solid var(--rule); padding-block: 8px; }
+.bat { font-size: 30px; font-weight: 700; color: var(--stitch); text-align: center; font-variant-numeric: tabular-nums; line-height: 1; }
+.bat small { font-size: 13px; margin-left: 1px; color: var(--ink); }
+.lmain { min-width: 0; display: flex; flex-direction: column; gap: 2px; text-align: left; background: none; border: 0; color: inherit; padding: 0; }
+.lname { font-size: 22px; line-height: 1.2; overflow-wrap: anywhere; }
+.lmeta { font-size: 12px; color: var(--pencil); font-weight: 700; font-variant-numeric: tabular-nums; }
+.lmeta.warn { color: #b3362c; }
+.lacts { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.ink { background: var(--ink); color: var(--paper); border: 0; border-radius: 999px; padding: 8px 16px; font-weight: 700; font-size: 15px; }
+.ink.red { background: #b3362c; }
+.pencil { background: transparent; color: var(--pencil); border: 1.5px solid var(--rule); border-radius: 999px; padding: 5px 10px; font-weight: 700; font-size: 12px; }
+.write { background: none; border: 0; border-bottom: 2px dashed var(--rule); color: var(--pencil); font-weight: 700; font-size: 16px; padding: 10px 2px; text-align: left; width: 100%; }
+.write:hover { color: var(--ink); border-bottom-color: var(--ink); }
+.lrow input { font: inherit; font-size: 20px; font-weight: 700; width: 100%; background: transparent; color: var(--ink); border: 0; border-bottom: 2px solid var(--ink); border-radius: 0; padding: 6px 2px; }
+.lrow input:focus-visible { outline: none; border-bottom-color: var(--stitch); }
+.lineup-foot { margin: 10px 0 0; font-size: 12px; color: var(--pencil); text-align: center; }
+.lineup button:focus-visible, .lineup input:focus-visible { outline: 3px solid var(--stitch); outline-offset: 2px; }
+@media (max-width: 440px) { .lrow { grid-template-columns: 46px minmax(0, 1fr); } .lrow .lacts { grid-column: 2; justify-content: flex-start; } .bat { font-size: 26px; } }
+
+/* ===== home ===== */
+.hero { position: relative; display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.4fr); align-items: center; gap: 0; background: radial-gradient(120% 90% at 85% 30%, #20503b 0%, var(--board) 55%); border: 3px solid var(--chalk); border-radius: 8px; padding: 18px 0 14px 20px; overflow: hidden; box-shadow: 0 6px 0 rgba(0,0,0,.35); }
+.hero-hit { position: absolute; inset: 0; background: transparent; border: 0; border-radius: 6px; z-index: 2; }
+.hero-hit:focus-visible { outline: 3px solid var(--lamp); outline-offset: -6px; }
+.hero-text { display: flex; flex-direction: column; gap: 6px; position: relative; z-index: 1; }
+.hero h2 { margin: 0; font-size: 22px; letter-spacing: .12em; }
+.hero-count { margin: 0; line-height: .9; display: flex; align-items: baseline; gap: 4px; font-variant-numeric: tabular-nums; }
+.hero-count b { font-size: clamp(64px, 19vw, 96px); color: var(--lamp); letter-spacing: -.02em; text-shadow: 0 0 24px rgba(255, 210, 63, .35); }
+.hero-count span { font-size: 22px; color: var(--chalk-dim); font-weight: 700; }
+.hero-next { margin: 0; font-size: 15px; font-weight: 700; color: var(--chalk-dim); }
+.hero-next b { color: var(--chalk); font-size: 18px; }
+.hero-clears { margin: 0; font-size: 12px; color: var(--lamp); font-weight: 700; }
+.hero-go { align-self: flex-start; margin-top: 8px; background: var(--lamp); color: var(--board-deep); font-weight: 700; font-size: 16px; padding: 9px 16px; border-radius: 999px; box-shadow: 0 3px 0 var(--dirt); }
+.hero:hover .hero-go { transform: translateY(-1px); }
+.tripmap { width: 118%; height: auto; display: block; margin: -6% -10% -6% -4%; }
+.tripmap path { fill: rgba(244, 241, 227, .1); stroke: var(--board); stroke-width: 1.2; vector-effect: non-scaling-stroke; }
+.tripmap path.done { fill: var(--dirt); }
+.tripmap path.next { fill: var(--lamp); animation: blink 1.6s ease-in-out infinite; }
+.tripmap .inset { fill: none; stroke: var(--line); stroke-width: 1; stroke-dasharray: 5 4; vector-effect: non-scaling-stroke; }
+.hero.intro .tripmap path.done { animation: paint .5s calc(var(--i) * 45ms + 250ms) both ease-out; }
+@keyframes paint { from { fill: rgba(244, 241, 227, .1); } to { fill: var(--dirt); } }
+@keyframes blink { 50% { fill: #fff3b8; } }
+
+.seg { display: grid; grid-template-columns: 1fr 1fr; background: var(--board-cell); border-radius: 999px; padding: 4px; gap: 4px; }
+.seg button { background: transparent; border: 0; color: var(--chalk-dim); font-weight: 700; font-size: 15px; padding: 10px 8px; border-radius: 999px; }
+.seg button[aria-checked="true"], .seg button[aria-pressed="true"] { background: var(--chalk); color: var(--board-deep); }
+
+.block { display: flex; flex-direction: column; gap: 12px; }
+.block-head { display: flex; flex-direction: column; gap: 2px; }
+.block-head .sec { font-size: 21px; }
+
+.nine { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.tile { position: relative; background: var(--board); border: 2px solid var(--line); border-radius: 10px; padding: 8px 6px 10px; display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--chalk); transition: border-color .15s, transform .1s; }
+.tile:hover { border-color: var(--chalk); }
+.tile:active { transform: scale(.97); }
+.rsil { width: 100%; max-width: 120px; aspect-ratio: 1; height: auto; }
+.rsil path { fill: rgba(244, 241, 227, .08); stroke: none; }
+.rsil path.in { fill: var(--chalk); stroke: var(--board); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.tile:hover .rsil path.in { fill: var(--lamp); }
+.tl { font-weight: 700; font-size: 15px; }
+.tb { position: absolute; top: 6px; right: 6px; font-size: 11px; font-weight: 700; color: var(--board-deep); background: var(--lamp); border-radius: 999px; padding: 1px 7px; font-variant-numeric: tabular-nums; }
+.free-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: left; background: transparent; color: var(--chalk); border: 2px dashed var(--line); border-radius: 10px; padding: 12px 14px; }
+.free-row:hover { border-color: var(--chalk); }
+.free-row b { display: block; font-size: 17px; }
+.free-row small { display: block; font-size: 13px; color: var(--chalk-dim); }
+.free-row em { font-style: normal; font-weight: 700; font-size: 13px; color: var(--lamp); white-space: nowrap; }
+
+.drills { list-style: none; margin: 0; padding: 0; background: var(--board); border-radius: 10px; border: 2px solid var(--line); }
+.drills li + li { border-top: 1px solid var(--line); }
+.drills button { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "n t" "d t"; gap: 0 12px; align-items: center; text-align: left; background: none; border: 0; color: var(--chalk); padding: 12px 14px; }
+.drills button:hover { background: rgba(244, 241, 227, .05); }
+.dn { grid-area: n; font-weight: 700; font-size: 16px; }
+.dd { grid-area: d; font-size: 12px; color: var(--chalk-dim); }
+.dt { grid-area: t; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--lamp); font-size: 15px; }
+
+/* scoreboard fix: fixed columns so R never collapses */
+.board table { table-layout: fixed; min-width: 0; }
+.board th, .board td { width: auto; }
+.board .c-name { width: 3.6em; }
+.board .c-tot { width: 2.6em; }
+.board td { height: 38px; font-size: 20px; }
+.board td.name { max-width: none; font-size: 12px; padding-inline: 2px; }
+@media (max-width: 380px) { .board table { border-spacing: 3px; } .board td { font-size: 17px; height: 34px; } }
+
+.subtabs.seg { grid-template-columns: repeat(3, 1fr); }
+.subtabs.seg button { font-size: 13px; padding: 9px 4px; }
+
+@media (prefers-reduced-motion: reduce) { .tripmap path.next { animation: none; } }
+
+/* chips: on = chalk with check, off = dashed */
+.types .type { display: inline-flex; align-items: center; gap: 6px; border: 2px dashed var(--line); color: var(--chalk-dim); background: transparent; padding: 7px 14px; }
+.types .type::before { content: ""; width: 14px; height: 14px; border-radius: 50%; border: 2px solid currentColor; box-sizing: border-box; }
+.types .type[aria-pressed="true"] { background: var(--chalk); color: var(--board-deep); border: 2px solid var(--chalk); }
+.types .type[aria-pressed="true"]::before { border: 0; background: var(--stitch) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M3.5 7.2l2.3 2.3 4.7-5' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/100% no-repeat; }
+
+/* wide screens: home in two columns */
+@media (min-width: 960px) {
+  .wrap { max-width: 1040px; }
+  #app.home { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 20px 28px; align-items: start; }
+  #app.home > .hero, #app.home > .seg, #app.home > .b-nine { grid-column: 1; }
+  #app.home > .b-types, #app.home > .b-drills { grid-column: 2; }
+  #app.home > .b-types { grid-row: 1; }
+  #app.home > .b-drills { grid-row: 2 / span 2; }
+  #app:not(.home) { max-width: 640px; margin-inline: auto; width: 100%; }
+  .rsil { max-width: 108px; }
+}
+
+.call { scroll-margin-top: 76px; }
+.choice:disabled { opacity: .58; }
+.choice.right, .choice.wrong { opacity: 1; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 @keyframes pop { from { transform: scale(.94); opacity: .4; } to { transform: scale(1); opacity: 1; } }
 .call, .result { animation: pop .18s ease-out; }
 </style>
-<style>*,*::before,*::after{box-sizing:border-box}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<style>*,*::before,*::after{box-sizing:border-box}body{margin:0}img{max-width:100%}[hidden]{display:none!important}:root{padding-top:env(safe-area-inset-top,0px)}</style>
 </head>
 <body>
 
 
 <div class="wrap">
-  <header>
-    <h1><small>やきゅうで おぼえる</small>都道府県ベースボール</h1>
-    <div class="row" id="head-right"></div>
+  <header class="top">
+    <div class="logo">
+      <svg viewBox="0 0 34 34" aria-hidden="true"><circle class="ball" cx="17" cy="17" r="15"/><path class="seam" d="M8.5 5.5c4.2 5 4.2 18 0 23M25.5 5.5c-4.2 5-4.2 18 0 23"/></svg>
+      <h1><small>やきゅうで おぼえる</small>都道府県ベースボール</h1>
+    </div>
+    <div id="head-right"></div>
   </header>
   <main id="app" class="stack"></main>
 </div>
+<nav class="dock" id="dock" aria-label="メニュー" hidden></nav>
 
 <script>
 const PREFS = [
@@ -769,26 +917,34 @@ function animateMaps(root) {
 // ---------- 画面 ----------
 const app = document.getElementById("app");
 const headRight = document.getElementById("head-right");
+
 let game = null;
 let view = "home";
 let slotEdit = null, slotDelete = null;
 let listTab = "schools", listPref = "all";
 
+const dock = document.getElementById("dock");
+const ICONS = {
+  home: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M7.2 5.4c1.6 2 1.6 11.2 0 13.2M16.8 5.4c-1.6 2-1.6 11.2 0 13.2"/></svg>`,
+  book: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5l5-2 6 2 5-2v15l-5 2-6-2-5 2z"/><path d="M9 3.5v15M15 5.5v15"/></svg>`,
+  records: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9.5M10 2.5h4M18.5 6.5l1.5-1.5"/></svg>`,
+  lists: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v4a5 5 0 0 1-10 0z"/><path d="M7 5H4a3 3 0 0 0 3 4M17 5h3a3 3 0 0 1-3 4M12 13v4M8.5 20.5h7M9.5 17h5"/></svg>`
+};
+const NAV = [["home", "あそぶ"], ["book", "スタンプ帳"], ["records", "きろく"], ["lists", "甲子園しりょう"]];
+
 function header() {
   const s = me();
-  if (!s) { headRight.innerHTML = ""; return; }
-  const tabs = [["home", "あそぶ"], ["book", "スタンプ帳"], ["records", "きろく"], ["lists", "しりょう"]];
-  headRight.innerHTML = `
-    <div class="tabs" role="tablist">${tabs.map(([id, l]) => `<button class="tab" role="tab" aria-selected="${view === id}" data-go="${id}">${l}</button>`).join("")}</div>
-    <div class="player-chip"><span class="who">${esc(s.name)}</span><button class="ghost small" data-go="slots">かえる</button></div>`;
-  headRight.querySelectorAll("[data-go]").forEach(b => b.onclick = () => {
-    if (b.dataset.go === "slots") { save.current = null; persist(); game = null; view = "home"; return render(); }
-    view = b.dataset.go; game = null; render();
-  });
+  if (!s) { headRight.innerHTML = ""; dock.hidden = true; document.body.classList.remove("has-dock"); return; }
+  headRight.innerHTML = `<button class="who-chip" data-go="slots" aria-label="プレイヤーをかえる"><span class="order">${save.current + 1}番</span>${esc(s.name)}</button>`;
+  headRight.querySelector("[data-go]").onclick = () => { save.current = null; persist(); game = null; view = "home"; render(); };
+  dock.hidden = false; document.body.classList.add("has-dock");
+  dock.innerHTML = NAV.map(([id, l]) => `<button data-go="${id}" ${view === id ? 'aria-current="page"' : ""}>${ICONS[id]}<span>${l}</span></button>`).join("");
+  dock.querySelectorAll("[data-go]").forEach(b => b.onclick = () => { view = b.dataset.go; game = null; render(); window.scrollTo({ top: 0 }); });
 }
 
 function render() {
   header();
+  app.classList.toggle("home", !!me() && view === "home" && !game);
   if (!me()) return renderSlots();
   if (view === "book") return renderBook();
   if (view === "records") return renderRecords();
@@ -799,30 +955,36 @@ function render() {
 
 function renderSlots() {
   app.innerHTML = `
-    <h2 class="sec">だれが あそぶ？</h2>
-    <p class="muted">セーブは5人分。名前を入れると、スタンプ帳・日本一周・時間の記録をべつべつに残せるよ。</p>
-    <div class="slots">
+    <section class="lineup" aria-labelledby="lineup-title">
+      <div class="lineup-head">
+        <h2 id="lineup-title">メンバー表</h2>
+        <p>だれが あそぶ？　打順をえらんでね</p>
+      </div>
+      <ol class="lineup-rows">
       ${save.slots.map((s, i) => {
+        const no = `<span class="bat">${i + 1}<small>番</small></span>`;
         if (slotEdit === i) return `
-          <div class="slot"><div class="no">${i + 1}</div>
-            <div class="info"><input id="name-${i}" maxlength="10" placeholder="なまえ" value="${s ? esc(s.name) : ""}" aria-label="なまえ"></div>
-            <div class="acts"><button class="primary sm" data-ok="${i}">けってい</button><button class="ghost small" data-cancel="${i}">やめる</button></div></div>`;
+          <li class="lrow editing">${no}
+            <div class="lmain"><label class="sr" for="name-${i}">なまえ</label><input id="name-${i}" maxlength="10" placeholder="なまえを書く" value="${s ? esc(s.name) : ""}" autocomplete="off"></div>
+            <div class="lacts"><button class="ink" data-ok="${i}">けってい</button><button class="pencil" data-cancel="${i}">やめる</button></div></li>`;
         if (slotDelete === i) return `
-          <div class="slot"><div class="no">${i + 1}</div>
-            <div class="info"><div class="nm">${esc(s.name)} のデータを けしますか？</div><div class="meta">スタンプも記録も消えます。</div></div>
-            <div class="acts"><button class="ghost small danger" data-del-yes="${i}">けす</button><button class="ghost small" data-cancel="${i}">やめる</button></div></div>`;
+          <li class="lrow">${no}
+            <div class="lmain"><b class="lname">${esc(s.name)}</b><span class="lmeta warn">スタンプも記録も消えます。けしますか？</span></div>
+            <div class="lacts"><button class="ink red" data-del-yes="${i}">けす</button><button class="pencil" data-cancel="${i}">やめる</button></div></li>`;
         if (!s) return `
-          <div class="slot"><div class="no">${i + 1}</div>
-            <div class="info"><div class="nm dim">あき</div><div class="meta">あたらしく はじめる</div></div>
-            <div class="acts"><button class="ghost small" data-new="${i}">名前を入れる</button></div></div>`;
+          <li class="lrow vacant">${no}
+            <div class="lmain"><button class="write" data-new="${i}">＋ 名前を書いて はじめる</button></div></li>`;
         return `
-          <div class="slot"><div class="no">${i + 1}</div>
-            <div class="info"><div class="nm">${esc(s.name)}</div>
-              <div class="meta">スタンプ ${s.stamps.length}/47 ・ 日本一周 ${s.trip}/47${s.tripClears ? `（${s.tripClears}周クリア）` : ""}</div></div>
-            <div class="acts"><button class="primary sm" data-play="${i}">あそぶ</button>
-              <button class="ghost small" data-new="${i}">名前</button><button class="ghost small" data-del="${i}">けす</button></div></div>`;
+          <li class="lrow">${no}
+            <button class="lmain play" data-play="${i}">
+              <b class="lname">${esc(s.name)}</b>
+              <span class="lmeta">スタンプ ${s.stamps.length}/47　日本一周 ${s.trip}/47${s.tripClears ? `（${s.tripClears}周）` : ""}</span>
+            </button>
+            <div class="lacts"><button class="ink" data-play="${i}">あそぶ</button><button class="pencil" data-new="${i}" aria-label="${esc(s.name)}の名前をかえる">名前</button><button class="pencil" data-del="${i}" aria-label="${esc(s.name)}のデータをけす">けす</button></div></li>`;
       }).join("")}
-    </div>`;
+      </ol>
+      <p class="lineup-foot">記録はこの端末に5人分まで のこるよ</p>
+    </section>`;
   app.querySelectorAll("[data-new]").forEach(b => b.onclick = () => { slotEdit = +b.dataset.new; slotDelete = null; render(); const el = document.getElementById("name-" + slotEdit); el && el.focus(); });
   app.querySelectorAll("[data-cancel]").forEach(b => b.onclick = () => { slotEdit = slotDelete = null; render(); });
   app.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { slotDelete = +b.dataset.del; slotEdit = null; render(); });
@@ -839,53 +1001,92 @@ function renderSlots() {
   if (inp) inp.onkeydown = e => { if (e.key === "Enter") ok(slotEdit); };
 }
 
+// 地方のシルエット（まわりの県はうすく）
+function regionSvg(regions) {
+  const names = PREFS.filter(p => regions.includes(p.region) && p.name !== "沖縄県").map(p => p.name);
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const n of names) { const [a, b, c, d] = BOX[n]; x0 = Math.min(x0, a); y0 = Math.min(y0, b); x1 = Math.max(x1, c); y1 = Math.max(y1, d); }
+  if (regions.includes("九州地方")) y1 = Math.min(y1, BOX["鹿児島県"][1] + (BOX["宮崎県"][3] - BOX["宮崎県"][1]) * 1.2);
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, sz = Math.max(x1 - x0, y1 - y0) * 1.14;
+  const vb = [cx - sz / 2, cy - sz / 2, sz, sz].map(v => v.toFixed(0)).join(" ");
+  const paths = Object.entries(MAP.paths).map(([n, d]) => `<path d="${d}"${names.includes(n) ? ' class="in"' : ""}/>`).join("");
+  return `<svg class="rsil" viewBox="${vb}" aria-hidden="true">${paths}</svg>`;
+}
+
+function tripMap(s) {
+  const done = PREFS.slice(0, s.trip).map(p => p.name);
+  const next = PREFS[s.trip] ? PREFS[s.trip].name : null;
+  const paths = Object.entries(MAP.paths).map(([n, d]) => {
+    const i = done.indexOf(n);
+    return `<path d="${d}" class="${i >= 0 ? "done" : n === next ? "next" : ""}"${i >= 0 ? ` style="--i:${i}"` : ""}/>`;
+  }).join("");
+  const [ix0, iy0, ix1, iy1] = MAP.inset;
+  return `<svg class="tripmap" viewBox="${FULL.join(" ")}" aria-hidden="true"><rect class="inset" x="${ix0}" y="${iy0}" width="${ix1 - ix0}" height="${iy1 - iy0}" rx="10"/>${paths}</svg>`;
+}
+
+const NINE = [
+  ["tohoku", ["北海道地方", "東北地方"]], ["kanto", ["関東地方"]], ["chubu", ["中部地方"]],
+  ["kinki", ["近畿地方"]], ["chugoku", ["中国地方"]], ["shikoku", ["四国地方"]],
+  ["kyushu", ["九州地方"]], ["east", ["北海道地方", "東北地方", "関東地方", "中部地方"]], ["west", ["近畿地方", "中国地方", "四国地方", "九州地方"]]
+];
+const SHORT = { east: "東日本", west: "西日本" };
+let homeAnimated = false;
+
 function renderHome() {
   const s = me();
-  const best = id => s.best[id] != null ? `<span class="best">ベスト ${s.best[id]}点</span>` : "";
-  const shown = TYPES.filter(t => s.ball ? t.group !== "plain" : t.group !== "ball");
   const act = activeTypes(s);
+  const shown = TYPES.filter(t => s.ball ? t.group !== "plain" : t.group !== "ball");
+  const next = PREFS[s.trip];
   app.innerHTML = `
-    <div class="switch-row">
-      <span class="muted">野球といっしょに おぼえる</span>
-      <button class="switch" role="switch" aria-checked="${s.ball}" id="ball-switch"><i></i><span>${s.ball ? "野球 ON" : "野球 OFF"}</span></button>
-    </div>
-    <div class="stack">
-      <h2 class="sec">モードをえらぶ</h2>
-      <div class="modes">
-        <button class="mode trip" data-mode="trip"><b>日本一周</b><span>北海道から沖縄まで、47都道府県を1つずつ旅しよう（いま ${s.trip}/47${s.tripClears ? `・${s.tripClears}周クリア` : ""}）</span></button>
-        <button class="mode" data-mode="free"><b>フリーモード</b><span>全国から好きなだけ</span>${s.bestStreak ? `<span class="best">さいこう ${s.bestStreak}れんぞく</span>` : ""}</button>
-        <button class="mode" data-mode="east"><b>東日本モード</b><span>北海道・東北・関東・中部</span>${best("east")}</button>
-        <button class="mode" data-mode="west"><b>西日本モード</b><span>近畿・中国・四国・九州・沖縄</span>${best("west")}</button>
+    <section class="hero ${homeAnimated ? "" : "intro"}">
+      <button class="hero-hit" data-mode="trip" aria-label="日本一周をつづける"></button>
+      <div class="hero-text">
+        <h2>日本一周</h2>
+        <p class="hero-count"><b>${s.trip}</b><span>/47</span></p>
+        <p class="hero-next">${s.trip === 0 && !s.tripClears ? "北海道から出発しよう" : `つぎは <b>${next.name}</b>`}</p>
+        ${s.tripClears ? `<p class="hero-clears">${s.tripClears}周クリア</p>` : ""}
+        <span class="hero-go">${s.trip === 0 ? "出発する" : "旅をつづける"}</span>
       </div>
+      ${tripMap(s)}
+    </section>
+
+    <div class="seg" role="radiogroup" aria-label="問題のタイプ">
+      <button role="radio" aria-checked="${s.ball}" data-ball="1">野球といっしょに</button>
+      <button role="radio" aria-checked="${!s.ball}" data-ball="0">地図だけで</button>
     </div>
-    <div class="stack">
-      <h2 class="sec">地方モード</h2>
-      <p class="muted">えらんだ地方だけで${s.ball ? "9回勝負" : "9問"}。こたえの選択肢もその地方から出るよ。</p>
-      <div class="modes small">${REGION_MODES.map(id => `<button class="mode" data-mode="${id}"><b>${AREAS[id].label}</b><span>${AREAS[id].desc}</span>${best(id)}</button>`).join("")}</div>
-    </div>
-    <div class="stack">
-      <h2 class="sec">クイズのしゅるい</h2>
-      <p class="muted">上のモードで出す問題をえらんでね（いくつでもOK）。</p>
+
+    <section class="block b-nine">
+      <div class="block-head"><h2 class="sec">${s.ball ? "9回勝負" : "9問チャレンジ"}</h2><p class="muted">地方をえらぶと、こたえもその地方から出るよ</p></div>
+      <div class="nine">
+        ${NINE.map(([id, regs]) => `<button class="tile" data-mode="${id}">${regionSvg(regs)}<span class="tl">${SHORT[id] || AREAS[id].label}</span>${s.best[id] != null ? `<span class="tb">${s.best[id]}点</span>` : ""}</button>`).join("")}
+      </div>
+      <button class="free-row" data-mode="free"><span><b>フリーモード</b><small>全国から好きなだけ。れんぞくせいかいを ねらおう</small></span>${s.bestStreak ? `<em>さいこう ${s.bestStreak}れんぞく</em>` : ""}</button>
+    </section>
+
+    <section class="block b-types">
+      <div class="block-head"><h2 class="sec">出す問題</h2><p class="muted">いくつでも えらべるよ</p></div>
       <div class="types">${shown.map(t => `<button class="type" aria-pressed="${act.includes(t.id)}" data-type="${t.id}">${t.label}</button>`).join("")}</div>
-      <p class="muted" id="type-note"></p>
-    </div>
-    <div class="stack practice">
-      <h2 class="sec">れんしゅうモード <span class="tag">野球なし・10問・タイムをはかる</span></h2>
+      <p class="muted" id="type-note" role="status"></p>
+    </section>
+
+    <section class="block b-drills">
+      <div class="block-head"><h2 class="sec">れんしゅう</h2><p class="muted">10問で タイムをはかるよ</p></div>
       <div class="row"><label class="muted" for="scope">はんい</label>
         <select id="scope">${[["all", "全国"], ...REGION_MODES.map(id => [id, AREAS[id].label])].map(([id, l]) => `<option value="${id}" ${s.scope === id ? "selected" : ""}>${l}</option>`).join("")}</select></div>
-      <div class="modes small">${PRACTICE.map(p => {
-        const rec = (s.records[`p:${p.id}:${s.scope}`] || []);
+      <ul class="drills">${PRACTICE.map(p => {
+        const rec = s.records[`p:${p.id}:${s.scope}`] || [];
         const bt = rec.length ? Math.min(...rec.map(r => r.ms)) : null;
-        return `<button class="mode" data-practice="${p.id}"><b>${p.label}</b><span>${p.desc}</span>${bt ? `<span class="best">ベスト ${fmtTime(bt)}</span>` : ""}</button>`;
-      }).join("")}</div>
-    </div>`;
-  document.getElementById("ball-switch").onclick = () => { s.ball = !s.ball; persist(); renderHome(); };
+        return `<li><button data-practice="${p.id}"><span class="dn">${p.label}</span><span class="dd">${p.desc}</span><span class="dt">${bt ? fmtTime(bt) : "―"}</span></button></li>`;
+      }).join("")}</ul>
+    </section>`;
+  homeAnimated = true;
+  app.querySelectorAll("[data-ball]").forEach(b => b.onclick = () => { s.ball = b.dataset.ball === "1"; persist(); renderHome(); });
   document.getElementById("scope").onchange = e => { s.scope = e.target.value; persist(); renderHome(); };
   app.querySelectorAll("[data-type]").forEach(b => b.onclick = () => {
     const id = b.dataset.type;
     const key = s.ball ? "types" : "plainTypes";
     if (s[key].includes(id)) {
-      if (s[key].length === 1) { document.getElementById("type-note").textContent = "1つはえらんでおいてね。"; return; }
+      if (s[key].length === 1) { document.getElementById("type-note").textContent = "1つは えらんでおいてね。"; return; }
       s[key] = s[key].filter(t => t !== id);
     } else s[key].push(id);
     persist(); renderHome();
@@ -975,6 +1176,7 @@ function boardHtml() {
   }).join("");
   const sc = game.results.filter(Boolean).length;
   return `<div class="board"><div class="board-scroll"><table>
+    <colgroup><col class="c-name">${"<col>".repeat(N)}<col class="c-tot"></colgroup>
     <thead><tr>${head}</tr></thead>
     <tbody><tr><td class="name">${esc(s.name)}</td>${cells}<td class="total">${sc}</td></tr></tbody>
   </table></div><div class="board-meta"><span>${esc(game.label)}</span><span>考えた時間 ${fmtTime(game.thinkMs)}</span></div></div>`;
@@ -1207,7 +1409,7 @@ function renderBook() {
 
 // ---------- しりょう（高校名・出場回数・優勝回数） ----------
 function renderLists() {
-  const tabs = [["schools", "高校名一覧"], ["apps", "出場回数ランキング"], ["wins", "優勝回数ランキング"]];
+  const tabs = [["schools", "高校一覧"], ["apps", "出場回数"], ["wins", "優勝回数"]];
   const prefSel = `<select id="list-pref"><option value="all">全国</option>${REGION_NAMES.map(r => `<optgroup label="${regionLabel(r)}">${PREFS.filter(p => p.region === r).map(p => `<option value="${p.name}" ${listPref === p.name ? "selected" : ""}>${p.name}</option>`).join("")}</optgroup>`).join("")}</select>`;
   let body = "";
   const inPref = s => listPref === "all" || s.pref === listPref;
@@ -1235,7 +1437,8 @@ function renderLists() {
   }
   app.innerHTML = `
     <h2 class="sec">甲子園しりょう</h2>
-    <div class="subtabs">${tabs.map(([id, l]) => `<button class="type" aria-pressed="${listTab === id}" data-lt="${id}">${l}</button>`).join("")}</div>
+    <p class="muted">${listTab === "schools" ? "都道府県ごとの強い高校と、甲子園の記録" : listTab === "apps" ? "夏の甲子園に出た回数が多い高校" : "春・夏の甲子園で優勝した回数"}</p>
+    <div class="subtabs seg">${tabs.map(([id, l]) => `<button aria-pressed="${listTab === id}" data-lt="${id}">${l}</button>`).join("")}</div>
     <div class="row"><label class="muted" for="list-pref">都道府県</label>${prefSel}</div>
     ${body}
     <p class="note">夏の出場回数：Wikipediaの都道府県別の記録（2024年夏まで）に、2025年・2026年夏の出場校を足したもの。春の出場回数は入っていません。優勝回数は2026年夏まで。学校の名前は、むかしの名前（旧校名）の時代もふくめた記録です。</p>`;
