@@ -59,6 +59,7 @@ svg{display:block}
 .tool svg{width:18px;height:18px;flex:none}
 button.tool:hover{color:var(--ink);border-color:var(--ink-3)}
 #voiceSw[aria-pressed="false"]{opacity:.5;text-decoration:line-through}
+#miniBtn[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 .tool input[type=range]{width:84px;accent-color:var(--ink)}
 .zoom{padding:0 4px;gap:0}
 .zoom button{border:0;background:none;width:30px;height:30px;border-radius:8px;font-weight:700;font-size:1rem;color:var(--ink-2)}
@@ -131,11 +132,15 @@ button.tool:hover{color:var(--ink);border-color:var(--ink-3)}
 .stats b{font-family:var(--f-num);font-size:1.05rem;color:var(--ink);font-variant-numeric:tabular-nums}
 
 .prog{display:none;list-style:none;margin:0;padding:0;flex-direction:column;gap:.35em;width:100%}
-.prog li{display:grid;grid-template-columns:1.9em minmax(0,1fr) auto;align-items:center;column-gap:.7em;row-gap:.35em;padding:.45em .2em;border-bottom:1px solid var(--rule)}
+.prog li{display:grid;grid-template-columns:1.9em minmax(0,1fr) auto auto;align-items:center;column-gap:.7em;row-gap:.35em;padding:.45em .2em;border-bottom:1px solid var(--rule)}
 .prog .pn{width:1.9em;height:1.9em;border-radius:.45em;display:grid;place-items:center;background:var(--c);color:var(--on-c);font-family:var(--f-num);font-weight:700;font-size:.8em}
 .prog .pt{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.prog .pd{font-family:var(--f-num);font-weight:700;color:var(--ink-3);font-variant-numeric:tabular-nums}
-.prog .pb{grid-column:2 / -1;height:.3em;border-radius:.15em;background:color-mix(in srgb,var(--c) 22%,transparent);overflow:hidden;display:none}
+.prog .pd{font-family:var(--f-num);font-weight:700;color:var(--ink-3);font-variant-numeric:tabular-nums;min-width:3.2em;text-align:right}
+.prog .pr{font-family:var(--f-num);font-weight:700;color:var(--ink-2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.prog li.next .pt::after{content:"つぎ";margin-left:.6em;font-size:.62em;padding:.15em .6em;border-radius:999px;background:var(--wash);color:var(--ink-2);vertical-align:.2em}
+.prog li.now{background:color-mix(in srgb,var(--c) 11%,transparent);border-radius:.5em;padding-inline:.5em}
+.prog li.now .pr{color:var(--ink)}
+.prog .pb{grid-column:2 / -1;margin-bottom:.15em;height:.3em;border-radius:.15em;background:color-mix(in srgb,var(--c) 22%,transparent);overflow:hidden;display:none}
 .prog .pb b{display:block;height:100%;width:0;background:var(--c);border-radius:inherit}
 .prog li.past{opacity:.38}
 .prog li.now{border-bottom-color:transparent}
@@ -146,6 +151,52 @@ button.tool:hover{color:var(--ink);border-color:var(--ink-3)}
 .info{display:contents}
 .info>.htop{order:-2}
 .info>.ringing{order:-1}
+
+.todo{display:none;flex-direction:column;gap:.35em;width:min(560px,100%);padding:.85em 1.1em;border-radius:16px;background:color-mix(in srgb,var(--c,var(--ink-3)) 12%,var(--card));border:1px solid color-mix(in srgb,var(--c,var(--ink-3)) 30%,transparent)}
+.todo.has{display:flex}
+#viewTimer:has(.todo.has) #tDial{width:min(470px,100%,max(280px,calc(100svh - 500px)))}
+.app.stage #viewTimer:has(.todo.has) #tDial{width:min(calc(76vh * var(--z)),44vw)}
+.todo-k{display:flex;align-items:center;gap:.5em;font-size:.72em;font-weight:700;letter-spacing:.12em;color:var(--c,var(--ink-2))}
+.todo-k i{width:.7em;height:.7em;border-radius:50%;background:var(--c,var(--ink-3))}
+.todo-t{margin:0;font-weight:700;font-size:1.15em;line-height:1.45;overflow-wrap:anywhere;white-space:pre-line}
+.todo-t.dim{color:var(--ink-3);font-size:.9em;font-weight:700}
+.todo-n{font-size:.8em;font-weight:700;color:var(--ink-2);display:flex;gap:.5em;align-items:baseline;flex-wrap:wrap}
+.todo-n b{color:var(--ink)}
+.todo-n:empty{display:none}
+.dock{display:contents}
+
+/* ---------- mini window ---------- */
+#miniHost{display:none}
+body.compact .app,body.compact #confetti{display:none}
+body.compact #miniHost{display:block}
+.mini{position:fixed;inset:0;display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:5vmin;padding:6vmin 7vmin;background:var(--paper);color:var(--ink);font-family:var(--f-ui);overflow:hidden}
+.mini .m-dial{position:relative;width:min(80vh,44vw);aspect-ratio:1}
+.mini .m-dial svg{width:100%;height:100%;overflow:visible}
+.mini .m-hub{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--f-num);font-weight:700;color:var(--ink-3);font-size:min(9vh,5vw)}
+.mini .m-info{display:flex;flex-direction:column;gap:1.4vmin;min-width:0}
+.mini .m-lbl{display:flex;align-items:center;gap:.45em;font-weight:700;font-size:max(13px,min(8vh,5vw));color:var(--ink-2);line-height:1.2}
+.mini .m-lbl span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mini .m-lbl i{flex:none;width:.55em;height:.55em;border-radius:50%;background:var(--mc,var(--ink-3))}
+.mini .m-time{font-family:var(--f-num);font-weight:700;font-size:min(30vh,14vw);line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.02em;white-space:nowrap}
+.mini .m-note{font-weight:700;font-size:max(12px,min(7vh,4.4vw));line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.mini .m-next{font-weight:700;font-size:max(11px,min(5.5vh,3.6vw));color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mini .m-note:empty,.mini .m-next:empty{display:none}
+.mini.warn .m-time{color:var(--warn)}
+.mini.done .m-time{color:var(--done)}
+.mini.warn .fillp{animation:breathe 1.6s ease-in-out infinite}
+.mini.done .hand,.mini.done .knob{opacity:0}
+.mini.nodial{grid-template-columns:minmax(0,1fr)}
+.mini.nodial .m-dial{display:none}
+.mini .m-btns{position:absolute;top:2.5vmin;right:2.5vmin;display:flex;gap:1.5vmin}
+.mini .m-btns button{width:max(30px,10vmin);height:max(30px,10vmin);border-radius:50%;border:1px solid var(--rule);background:var(--card);color:var(--ink-2);display:grid;place-items:center;padding:0;cursor:pointer}
+.mini .m-btns button svg{width:46%;height:46%}
+.mini .m-btns button.m-go{background:var(--mc,var(--ink));border-color:transparent;color:var(--on-c)}
+@media (max-aspect-ratio:1/1){
+  .mini{grid-template-columns:minmax(0,1fr);justify-items:center;text-align:center;align-content:center;padding-top:14vmin}
+  .mini .m-dial{width:min(46vh,70vw)}
+  .mini .m-info{align-items:center}
+  .mini .m-time{font-size:min(16vh,22vw)}
+}
 
 /* ---------- controls ---------- */
 .ctrls{display:flex;align-items:flex-start;justify-content:center;gap:clamp(18px,4vw,36px)}
@@ -184,6 +235,9 @@ button.tool:hover{color:var(--ink);border-color:var(--ink-3)}
 .in.title{font-size:1.05rem;font-weight:700}
 .rows{display:flex;flex-direction:column;gap:7px}
 .rows>.row{display:grid;grid-template-columns:26px minmax(0,1fr) auto auto 30px;gap:6px;align-items:center}
+.rows>.row .note{grid-column:2 / -1;font-size:.82rem;padding:6px 10px;background:var(--card);border-style:dashed}
+.rows>.row .note:focus{border-style:solid}
+.rows{gap:12px}
 .sw{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;font-family:var(--f-num);font-weight:700;font-size:.78rem;color:var(--on-c);background:var(--c)}
 .row.cur .sw{box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--c)}
 .unit{display:flex;align-items:center;gap:3px;font-size:.78rem;color:var(--ink-3);font-weight:700}
@@ -255,25 +309,34 @@ button.tool:hover{color:var(--ink);border-color:var(--ink-3)}
 
 .app.stage .dial{width:min(calc(56vh * var(--z)),94vw)}
 .app.stage .clock{width:min(calc(52vh * var(--z)),94vw)}
-.app.stage .htitle{font-size:2.3em;line-height:1.2}
+.app.stage .htitle{font-size:2.2em;line-height:1.2}
 .app.stage .status{font-size:.75em}
 .app.stage .kicker{font-size:.85em}
 .app.stage .tl{width:min(calc(110vh * var(--z)),100%)}
 .app.stage .tl-b{height:.8em}
 .app.stage .tl-t{font-size:.8em}
-.app.stage .stats{font-size:.8em;gap:.6em 2em}
+.app.stage .stats{font-size:.78em;gap:.6em 1.6em}
 .app.stage .stats div{flex-direction:column;align-items:flex-start;gap:.1em}
 .app.stage .stats b{font-size:1.75em}
 .app.stage .dirsw{font-size:.85em}
 .app.stage .digital .dt{font-size:calc(min(13vh,9vw) * var(--z))}
 .app.stage .ringing{width:min(calc(80vh * var(--z)),94vw);font-size:1.15em}
 .app.stage .nextcard{font-size:1.1em}
+.app.stage .info{font-size:1.18em}
+.app.stage .prog{font-size:1.08em;gap:.25em}
+.app.stage .prog li{padding:.5em .3em}
+.app.stage .prog.many{font-size:.88em}
+.app.stage .todo{display:flex;order:9;width:100%;font-size:1.12em;padding:.9em 1.2em;flex:1 1 auto}
+.app.stage .todo-t{font-size:1.45em}
+.app.stage .dock{display:flex;align-items:center;gap:1.2em 2.4em;flex-wrap:wrap;width:100%}
+.app.stage .dock .ctrls{font-size:.85em}
+.app.stage .dock .dirsw{font-size:.62em}
 @media (min-aspect-ratio:6/5){
-  .app.stage .hero{flex-direction:row;justify-content:center;align-items:center;gap:5vw;min-height:calc(100svh - 70px)}
-  .app.stage .info{display:flex;flex-direction:column;align-items:flex-start;gap:2.6vh;width:min(46vw,40em);min-width:0}
+  .app.stage .hero{flex-direction:row;justify-content:center;align-items:center;gap:4vw;min-height:calc(100svh - 70px)}
+  .app.stage .info{display:flex;flex-direction:column;align-items:flex-start;gap:2.4vh;width:min(48vw,34em);min-width:0}
   .app.stage .htop,.app.stage .htop.inline{align-items:flex-start;justify-content:flex-start;text-align:left}
   .app.stage .htitle{text-align:left}
-  .app.stage .dial{width:min(calc(78vh * var(--z)),50vw);flex:none}
+  .app.stage .dial{width:min(calc(76vh * var(--z)),44vw);flex:none}
   .app.stage .clock{width:min(calc(76vh * var(--z)),50vw);flex:none}
   .app.stage .stats,.app.stage .ctrls{justify-content:flex-start}
   .app.stage .digital{align-items:flex-start}
@@ -298,6 +361,7 @@ button.tool:hover{color:var(--ink);border-color:var(--ink-3)}
 </head>
 <body>
 <canvas id="confetti" hidden></canvas>
+<div id="miniHost"></div>
 <div class="app" id="app">
   <header class="bar">
     <div class="brand">
@@ -317,6 +381,7 @@ button.tool:hover{color:var(--ink);border-color:var(--ink-3)}
         <output id="zVal">100%</output>
         <button id="zIn" aria-label="大きくする">＋</button>
       </div>
+      <button class="tool" id="miniBtn" title="小窓で表示（授業中に画面の端に出しておけます）"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="15" rx="2"/><rect x="12" y="11.5" width="7" height="6" rx="1" fill="currentColor"/></svg><span class="lbl-t">小窓</span></button>
       <button class="tool stage-btn" id="stageBtn" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span id="stageLbl">大画面</span></button>
     </div>
   </header>
@@ -337,8 +402,11 @@ button.tool:hover{color:var(--ink);border-color:var(--ink-3)}
       <div class="htop inline">
         <span class="status" id="tKick"><i></i><span>待機中</span></span>
         <h1 class="htitle" id="tTitle">—</h1>
-      </div>      <div class="tl" id="tLine"></div>
+      </div>
+      <div class="tl" id="tLine"></div>
+      <div class="todo" id="tTodo"><span class="todo-k" id="tTodoK"><i></i><span>いまやること</span></span><p class="todo-t" id="tTodoT"></p><div class="todo-n" id="tTodoN"></div></div>
       <ol class="prog" id="tProg" aria-label="区間"></ol>
+      <div class="dock">
       <div class="stats">
         <div>経過<b id="tEl">00:00</b></div>
         <div>のこり<b id="tRem">00:00</b></div>
@@ -352,6 +420,7 @@ button.tool:hover{color:var(--ink);border-color:var(--ink-3)}
       <div class="dirsw st-only" role="group" aria-label="表示">
         <button data-dir="down" aria-selected="true">カウントダウン</button>
         <button data-dir="up" aria-selected="false">カウントアップ</button>
+      </div>
       </div>
       </div>
     </div>
@@ -368,7 +437,7 @@ button.tool:hover{color:var(--ink);border-color:var(--ink-3)}
       <div class="hr"></div>
       <div class="fld"><label for="sessTitle">題名</label><input class="in title" id="sessTitle" maxlength="40" placeholder="例：朝の集中タイム"></div>
       <div>
-        <span class="lbl-s">区間（上から順に進みます）</span>
+        <span class="lbl-s">区間と指示（上から順に進みます）</span>
         <div class="rows" id="rows"></div>
       </div>
       <div>
@@ -378,7 +447,7 @@ button.tool:hover{color:var(--ink);border-color:var(--ink-3)}
         </div>
       </div>
       <div class="sf"><span>合計 <b id="sessTotal">0:00</b></span><button class="danger" id="delSess">このセッションを削除</button></div>
-      <p class="hint">各区間の残り1分と終了時に、チャイムと声でお知らせします。時計の数字をタップしても表示を切り替えられます。<kbd>Space</kbd> 開始／停止　<kbd>N</kbd> 次の区間　<kbd>F</kbd> 大画面　<kbd>＋</kbd><kbd>−</kbd> サイズ</p>
+      <p class="hint">各区間の残り1分と終了時に、チャイムと声でお知らせします。各区間の「指示」は大画面と小窓に大きく出ます。時計の数字をタップすると、カウントダウンとアップを切り替えられます。<kbd>Space</kbd> 開始／停止　<kbd>N</kbd> 次の区間　<kbd>F</kbd> 大画面　<kbd>M</kbd> 小窓　<kbd>＋</kbd><kbd>−</kbd> サイズ</p>
     </aside>
   </section>
 
@@ -460,10 +529,11 @@ const ICON_AGAIN='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" str
 const ICON_X='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
 
 /* ---------- state ---------- */
+const EX_NOTES={'準備':'教科書とノートを机に出す','ウォームアップ':'きのうの復習プリントを解く','本番':'問題3〜5をノートに解く','導入':'テーマと目的を話す','本題':'資料を見せながら説明する','質疑応答':'質問をメモして答える'};
 function defaults(){
   return {voice:true,tDir:'down',currentId:null,sessions:[
-    {id:uid(),title:'朝の集中タイム',segs:[{id:uid(),label:'準備',sec:300},{id:uid(),label:'ウォームアップ',sec:300},{id:uid(),label:'本番',sec:600}]},
-    {id:uid(),title:'プレゼン練習',segs:[{id:uid(),label:'導入',sec:180},{id:uid(),label:'本題',sec:600},{id:uid(),label:'質疑応答',sec:300}]}
+    {id:uid(),title:'朝の集中タイム',segs:[{id:uid(),label:'準備',sec:300,note:EX_NOTES['準備']},{id:uid(),label:'ウォームアップ',sec:300,note:EX_NOTES['ウォームアップ']},{id:uid(),label:'本番',sec:600,note:EX_NOTES['本番']}]},
+    {id:uid(),title:'プレゼン練習',segs:[{id:uid(),label:'導入',sec:180,note:EX_NOTES['導入']},{id:uid(),label:'本題',sec:600,note:EX_NOTES['本題']},{id:uid(),label:'質疑応答',sec:300,note:EX_NOTES['質疑応答']}]}
   ]};
 }
 let S;
@@ -471,6 +541,8 @@ try{S=JSON.parse(localStorage.getItem(KEY));}catch(e){S=null}
 if(!S||!Array.isArray(S.sessions)||!S.sessions.length)S=defaults();
 if(!S.sessions.find(s=>s.id===S.currentId))S.currentId=S.sessions[0].id;
 if(typeof S.vol!=='number')S.vol=0.5;
+// add example instructions to the untouched sample sessions only
+S.sessions.forEach(s=>{if((s.title==='朝の集中タイム'||s.title==='プレゼン練習')&&s.segs.every(g=>!g.note&&EX_NOTES[g.label]))s.segs.forEach(g=>g.note=EX_NOTES[g.label]);});
 if(typeof S.zoom!=='number')S.zoom=1;
 if(!Array.isArray(S.alarms))S.alarms=[
   {id:uid(),time:'10:35',title:'1時間目終了',on:false},
@@ -489,6 +561,8 @@ function fmt(ms,ceil){
 function spoken(sec){const m=Math.floor(sec/60),s=sec%60;return (m?m+'分':'')+(s?s+'秒':'')||'0秒';}
 function shortDur(sec){const m=Math.floor(sec/60),s=sec%60;return m&&s?`${m}分${s}秒`:m?`${m}分`:`${s}秒`;}
 const segName=(g,i)=>g.label&&g.label.trim()?g.label.trim():`区間${i+1}`;
+const noteOf=g=>(g&&g.note||'').trim();
+const hhmm=t=>{const d=new Date(t);return p2(d.getHours())+':'+p2(d.getMinutes());};
 function esc(t){return String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 function setT(el,t){if(el.textContent!==t)el.textContent=t}
 function setH(el,h){if(el._h!==h){el.innerHTML=h;el._h=h}}
@@ -639,7 +713,7 @@ $('#tStart').onclick=()=>{
   if(running()){R.acc=segElapsed();R.startedAt=null;keepAwake(false);}
   else{
     if(R.done)resetRun();
-    if(R.segIdx===0&&R.acc===0){const g=s.segs[0];speak(`${s.title||'セッション'}を始めます。${segName(g,0)}、${spoken(g.sec)}`);}
+    if(R.segIdx===0&&R.acc===0){const g=s.segs[0];speak(`${s.title||'セッション'}を始めます。${segName(g,0)}、${spoken(g.sec)}。${noteOf(g)}`);}
     R.startedAt=Date.now();keepAwake(true);
   }
   structT();
@@ -652,8 +726,8 @@ function advance(manual){
   const i=R.segIdx, seg=s.segs[i];
   if(i+1<s.segs.length){
     const nx=s.segs[i+1];
-    if(!manual)announce('end',`${segName(seg,i)}、終わりです。次は${segName(nx,i+1)}、${spoken(nx.sec)}です`);
-    else if(running())speak(`${segName(nx,i+1)}、${spoken(nx.sec)}`);
+    if(!manual)announce('end',`${segName(seg,i)}、終わりです。次は${segName(nx,i+1)}、${spoken(nx.sec)}です。${noteOf(nx)}`);
+    else if(running())speak(`${segName(nx,i+1)}、${spoken(nx.sec)}。${noteOf(nx)}`);
     R.segIdx=i+1;R.acc=0;R.warned=false;
     if(running())R.startedAt=Date.now();
   }else{
@@ -688,7 +762,8 @@ function buildRingAndLine(){
   tlEls=[...tl.children];
   tl.hidden=!segs.length;
   const pg=$('#tProg');
-  pg.innerHTML=segs.map((g,k)=>`<li style="--c:${col(k)}"><span class="pn">${k+1}</span><span class="pt">${esc(segName(g,k))}</span><span class="pd">${shortDur(g.sec)}</span><i class="pb"><b></b></i></li>`).join('');
+  pg.innerHTML=segs.map((g,k)=>`<li style="--c:${col(k)}"><span class="pn">${k+1}</span><span class="pt">${esc(segName(g,k))}</span><span class="pr"></span><span class="pd">${shortDur(g.sec)}</span><i class="pb"><b></b></i></li>`).join('');
+  pg.classList.toggle('many',segs.length>5);
   pgEls=[...pg.children];
 }
 let pgEls=[];
@@ -742,11 +817,33 @@ function renderTimer(){
     const bar=t.firstChild.firstChild; const ws=w.toFixed(2)+'%'; if(bar.style.width!==ws)bar.style.width=ws;
     t.classList.toggle('cur',!R.done&&k===i);
   });
+  // projected clock times for each segment (the outlook)
+  const now=Date.now();let t=now-e;
   pgEls.forEach((li,k)=>{
-    const st=R.done||k<i?'past':k===i?'now':'';
+    const st=R.done||k<i?'past':k===i?'now':k===i+1?'next':'';
     if(li.className!==st)li.className=st;
+    li.children[0].textContent=st==='past'?'✓':String(k+1);
+    let txt='';
+    if(!R.done&&k>=i){const a=k===i?t:t;const b=a+segs[k].sec*1000;txt=`${hhmm(a)}〜${hhmm(b)}`;t=b;}
+    else if(st==='past')txt='済み';
+    setT(li.children[2],txt);
     if(k===i){const b=li.lastChild.firstChild,ws=(frac*100).toFixed(2)+'%';if(b.style.width!==ws)b.style.width=ws;}
   });
+  // instruction card
+  const todo=$('#tTodo'),nx=segs[i+1];
+  const started=running()||R.acc>0||R.segIdx>0;
+  let k,tt,nn='',dim=false,cc=c;
+  if(R.done){k='おわり';tt='おつかれさまでした';cc='var(--done)';}
+  else if(noteOf(seg)){k=started?`いまやること・${segName(seg,i)}`:`はじめに・${segName(seg,i)}`;tt=noteOf(seg);}
+  else if(nx){k=`いま・${segName(seg,i)}`;tt=`このあと「${segName(nx,i+1)}」`;}
+  else{k=`いま・${segName(seg,i)}`;tt='さいごの区間です';}
+  if(!R.done&&nx)nn=`<span>つぎ ${hhmm(now+left)}〜</span><b>${esc(segName(nx,i+1))}</b>${noteOf(nx)?`<span>${esc(noteOf(nx))}</span>`:''}`;
+  else if(!R.done)nn=`<span>${hhmm(now+left)} に終了予定</span>`;
+  if(!R.done&&!noteOf(seg)&&!segs.some(g=>noteOf(g)))dim=false;
+  setT($('#tTodoK').lastChild,k);setT($('#tTodoT'),tt);setH($('#tTodoN'),nn);
+  if(todo.style.getPropertyValue('--c')!==cc)todo.style.setProperty('--c',cc);
+  todo.classList.toggle('has',!!noteOf(seg)&&!R.done);
+  $('#tTodoT').classList.toggle('dim',dim);
 }
 
 /* ---------- side: sessions + editor ---------- */
@@ -771,6 +868,7 @@ function renderSide(){
       <label class="unit"><input class="num" id="mn-${g.id}" data-f="min" type="number" min="0" max="999" inputmode="numeric" value="${Math.floor(g.sec/60)}" aria-label="分">分</label>
       <label class="unit"><input class="num" id="sc-${g.id}" data-f="sec" type="number" min="0" max="59" inputmode="numeric" value="${g.sec%60}" aria-label="秒">秒</label>
       <button class="x" data-del="${g.id}" aria-label="区間${i+1}を削除">${ICON_X}</button>
+      <input class="in note" id="nt-${g.id}" data-f="note" value="${esc(g.note||'')}" maxlength="60" placeholder="指示（例：ノートにまとめる）" aria-label="区間${i+1}の指示">
     </div>`).join('');
     if(active){const a=document.getElementById(active);if(a)a.focus();}
   }
@@ -794,6 +892,7 @@ $('#rows').addEventListener('input',e=>{
   const row=e.target.closest('.row');if(!row)return;
   const s=cur(),g=s.segs.find(x=>x.id===row.dataset.id);if(!g)return;
   if(e.target.dataset.f==='label'){g.label=e.target.value;}
+  else if(e.target.dataset.f==='note'){g.note=e.target.value;save();return;}
   else{
     const m=Math.max(0,parseInt(row.querySelector('[data-f=min]').value)||0);
     const sc=clamp(parseInt(row.querySelector('[data-f=sec]').value)||0,0,59);
@@ -1064,10 +1163,105 @@ function confetti(){
   })(t0);
 }
 
+/* ---------- mini window (Document Picture-in-Picture, or compact page) ---------- */
+const ICON_SKIP='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 5.5v13l9-6.5z"/><rect x="16" y="5.5" width="3" height="13" rx="1"/></svg>';
+const ICON_LAP='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21V4"/><path d="M6 4h11l-2.5 4L17 12H6"/></svg>';
+const ICON_BACK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg>';
+const MINI_HTML=`<div class="mini">
+  <div class="m-dial"><svg viewBox="0 0 240 240" aria-hidden="true"></svg><div class="m-hub"></div></div>
+  <div class="m-info"><div class="m-lbl"><i></i><span></span></div><div class="m-time">00:00</div><div class="m-note"></div><div class="m-next"></div></div>
+  <div class="m-btns"><button class="m-go" aria-label="開始／一時停止"></button><button class="m-skip" aria-label="次へ"></button><button class="m-back" aria-label="元の画面に戻す" title="元の画面に戻す">${ICON_BACK}</button></div>
+</div>`;
+let MINI=null;
+function buildMini(doc,kind,win){
+  const host=kind==='pip'?doc.body:$('#miniHost');
+  host.innerHTML=MINI_HTML;
+  const root=host.querySelector('.mini'),q=x=>root.querySelector(x);
+  const m={doc,win,kind,root,dial:makeDial(q('.m-dial')),lbl:q('.m-lbl span'),time:q('.m-time'),note:q('.m-note'),next:q('.m-next'),hub:q('.m-hub'),go:q('.m-go'),skip:q('.m-skip')};
+  m.go.onclick=()=>{ensureAudio();(tab==='sw'?$('#sStart'):$('#tStart')).click();};
+  m.skip.onclick=()=>{if(tab==='timer')$('#tSkip').click();else if(tab==='sw')$('#sLap').click();};
+  q('.m-back').onclick=closeMini;
+  MINI=m;return m;
+}
+function renderMini(){
+  const m=MINI;if(!m)return;
+  let cls='mini',c='var(--ink-3)',lbl='',time='',note='',next='',hub='',go=ICON_PLAY,skip=null;
+  if(tab==='timer'){
+    const s=cur(),segs=s?s.segs:[];
+    if(!segs.length){lbl=s?(s.title||'無題'):'';time='00:00';note='区間がありません';setDial(m.dial,0,0,c,0);}
+    else{
+      const i=Math.min(R.segIdx,segs.length-1),seg=segs[i],total=seg.sec*1000;
+      const e=R.done?total:Math.min(segElapsed(),total),left=total-e,frac=e/total;
+      c=R.done?'var(--done)':col(i);
+      if(R.done)setDial(m.dial,0,1,c,null);else if(S.tDir==='down')setDial(m.dial,frac,1,c,frac);else setDial(m.dial,0,frac,c,frac);
+      lbl=R.done?'すべて終了':segName(seg,i);
+      time=R.done?'おわり':(S.tDir==='down'?fmt(left,true):fmt(e));
+      note=R.done?'おつかれさまでした':noteOf(seg);
+      const nx=segs[i+1];
+      next=R.done?'':nx?`つぎ：${segName(nx,i+1)}（${shortDur(nx.sec)}）`:`${hhmm(Date.now()+left)} に終了`;
+      hub=R.done?'✓':`${i+1}/${segs.length}`;
+      cls+=R.done?' done':(running()&&total>60000&&left<=60000)?' warn':'';
+      go=running()?ICON_PAUSE:R.done?ICON_AGAIN:ICON_PLAY;
+      if(!R.done)skip=ICON_SKIP;
+    }
+  }else if(tab==='sw'){
+    const e=wEl();
+    if(W.dir==='up'){const f=(e%60000)/60000;c='var(--c3)';setDial(m.dial,0,f,c,f);lbl='ストップウォッチ';time=fmt(e);hub=e>=60000?`${Math.floor(e/60000)+1}周`:'';if(wRun())skip=ICON_LAP;
+      if(W.laps.length)next=`ラップ ${W.laps.length}：${fmtCs(W.laps[W.laps.length-1]-(W.laps[W.laps.length-2]||0))}`;}
+    else{const left=Math.max(0,W.target-e),f=Math.min(1,e/W.target);c=W.done?'var(--done)':'var(--c0)';
+      if(W.done)setDial(m.dial,0,1,c,null);else setDial(m.dial,f,1,c,f);
+      lbl='カウントダウン';time=W.done?'おわり':fmt(left,true);next=`設定 ${fmt(W.target)}`;
+      cls+=W.done?' done':(wRun()&&W.target>60000&&left<=60000)?' warn':'';}
+    go=wRun()?ICON_PAUSE:W.done?ICON_AGAIN:ICON_PLAY;
+  }else{
+    cls+=' nodial';const now=new Date();
+    lbl=`${now.getMonth()+1}月${now.getDate()}日（${WD[now.getDay()]}）`;time=`${p2(now.getHours())}:${p2(now.getMinutes())}`;
+    const nx=nextAlarm(now);next=nx?`次 ${nx.a.time}　${alName(nx.a)}`:'オンのアラームはありません';
+    if(ringing){note=`${ringing.name}の時間です`;c='var(--c0)';}
+    go=null;
+  }
+  if(m.root.className!==cls)m.root.className=cls;
+  if(m.root.style.getPropertyValue('--mc')!==c)m.root.style.setProperty('--mc',c);
+  setT(m.lbl,lbl);setT(m.time,time);setT(m.note,note);setT(m.next,next);setT(m.hub,hub);
+  m.go.hidden=!go;if(go)setH(m.go,go);
+  m.skip.hidden=!skip;if(skip)setH(m.skip,skip);
+  if(tab==='al'&&ringing){m.go.hidden=false;setH(m.go,ICON_X);m.go.onclick=stopRing;}
+  else m.go.onclick=()=>{ensureAudio();(tab==='sw'?$('#sStart'):$('#tStart')).click();};
+}
+async function openMini(){
+  if(MINI){closeMini();return;}
+  ensureAudio();
+  if('documentPictureInPicture' in window){
+    try{
+      const w=await documentPictureInPicture.requestWindow({width:460,height:270});
+      const d=w.document;
+      document.querySelectorAll('style,link[rel="stylesheet"]').forEach(n=>d.head.appendChild(n.cloneNode(true)));
+      const th=document.documentElement.getAttribute('data-theme');if(th)d.documentElement.setAttribute('data-theme',th);
+      d.documentElement.lang='ja';d.title='セッションタイマー';d.body.style.margin='0';
+      buildMini(d,'pip',w);
+      w.addEventListener('pagehide',()=>{if(MINI&&MINI.win===w){MINI=null;paintMiniBtn();}});
+      const loop=()=>{if(!MINI||MINI.win!==w)return;renderMini();w.requestAnimationFrame(loop);};
+      w.requestAnimationFrame(loop);
+      w.setInterval(()=>{timerTick();swTick();alarmTick();},200);
+      paintMiniBtn();return;
+    }catch(err){}
+  }
+  buildMini(document,'inline',window);document.body.classList.add('compact');paintMiniBtn();
+}
+function closeMini(){
+  if(!MINI)return;const m=MINI;MINI=null;
+  if(m.kind==='pip'){try{m.win.close()}catch(e){}}
+  else{document.body.classList.remove('compact');$('#miniHost').innerHTML='';}
+  paintMiniBtn();
+}
+function paintMiniBtn(){$('#miniBtn').setAttribute('aria-pressed',!!MINI);$('#miniBtn .lbl-t').textContent=MINI?'小窓を閉じる':'小窓';}
+$('#miniBtn').onclick=openMini;
+
 /* ---------- loops & keys ---------- */
 setInterval(()=>{timerTick();swTick();alarmTick();},100);
 function frame(){
   tint();
+  if(MINI&&MINI.kind==='inline')renderMini();
   if(tab==='timer')renderTimer();else if(tab==='sw')renderSw();else renderAlarm();
   requestAnimationFrame(frame);
 }
@@ -1084,6 +1278,8 @@ document.addEventListener('keydown',e=>{
   else if(e.key==='f'||e.key==='F'){setStage(!app.classList.contains('stage'));}
   else if((e.key==='n'||e.key==='N')&&tab==='timer'){$('#tSkip').click();}
   else if((e.key==='l'||e.key==='L')&&tab==='sw'){$('#sLap').click();}
+  else if(e.key==='m'||e.key==='M'){openMini();}
+  else if(e.key==='Escape'&&MINI&&MINI.kind==='inline')closeMini();
   else if(e.key==='Escape'&&app.classList.contains('stage'))setStage(false);
 });
 if('speechSynthesis' in window)try{speechSynthesis.getVoices();}catch(e){}
