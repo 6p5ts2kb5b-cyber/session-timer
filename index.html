@@ -47,11 +47,11 @@ svg{display:block}
 .app{max-width:1240px;margin:0 auto;zoom:var(--z)}
 
 /* ---------- top bar ---------- */
-.bar{display:flex;align-items:center;gap:14px 20px;flex-wrap:wrap;padding-block:18px 10px}
+.bar{display:flex;align-items:center;gap:14px 16px;flex-wrap:wrap;padding-block:18px 10px}
 .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1.02rem;letter-spacing:.02em;white-space:nowrap}
 .brand svg{width:30px;height:30px}
 .modes{display:flex;background:var(--wash);border-radius:999px;padding:4px;gap:2px}
-.modes button{border:0;background:none;padding:8px 18px;border-radius:999px;font-weight:700;color:var(--ink-2);display:flex;align-items:center;gap:7px;white-space:nowrap;transition:background .2s,color .2s}
+.modes button{border:0;background:none;padding:8px 15px;border-radius:999px;font-weight:700;color:var(--ink-2);display:flex;align-items:center;gap:7px;white-space:nowrap;transition:background .2s,color .2s}
 .modes button svg{width:17px;height:17px}
 .modes button[aria-selected="true"]{background:var(--card);color:var(--ink);box-shadow:var(--lift)}
 .tools{margin-left:auto;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
@@ -60,7 +60,7 @@ svg{display:block}
 button.tool:hover{color:var(--ink);border-color:var(--ink-3)}
 #voiceSw[aria-pressed="false"]{opacity:.5;text-decoration:line-through}
 #miniBtn[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
-.tool input[type=range]{width:84px;accent-color:var(--ink)}
+.tool input[type=range]{width:72px;accent-color:var(--ink)}
 .zoom{padding:0 4px;gap:0}
 .zoom button{border:0;background:none;width:30px;height:30px;border-radius:8px;font-weight:700;font-size:1rem;color:var(--ink-2)}
 .zoom button:hover{background:var(--wash);color:var(--ink)}
@@ -197,6 +197,31 @@ body.compact #miniHost{display:block}
   .mini .m-info{align-items:center}
   .mini .m-time{font-size:min(16vh,22vw)}
 }
+
+/* ---------- voice recorder modal ---------- */
+.vmodal{position:fixed;inset:0;z-index:60;background:rgba(10,12,15,.45);display:grid;place-items:center;padding:16px}
+.vbox{background:var(--card);color:var(--ink);border-radius:var(--r);width:min(620px,100%);max-height:calc(100svh - 32px);overflow:auto;padding:22px 22px 18px;box-shadow:0 30px 80px -20px rgba(0,0,0,.45)}
+.vh{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.vh h2{margin:0;font-size:1.25rem}
+.vlead{font-size:.88rem;color:var(--ink-2);line-height:1.75;margin:.6em 0 0}
+.vmsg{margin:.8em 0 0;padding:.7em .9em;border-radius:12px;background:color-mix(in srgb,var(--c1) 16%,var(--card));font-size:.85rem;font-weight:700;line-height:1.6}
+.vsec{font-size:.75rem;letter-spacing:.12em;color:var(--ink-3);margin:20px 0 8px}
+.vlist{display:flex;flex-direction:column}
+.vrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--rule)}
+.vrow .vt{font-weight:700;display:flex;align-items:center;gap:8px;min-width:0}
+.vrow .vt i{flex:none;width:10px;height:10px;border-radius:50%;background:var(--c,var(--ink-3))}
+.vrow .vt span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vrow .vd{font-size:.76rem;color:var(--ink-3);font-weight:700;margin-top:2px}
+.vrow .vd.ok{color:var(--c2)}
+.vbtns{display:flex;gap:6px;align-items:center}
+.vb{height:34px;min-width:34px;padding:0 12px;border-radius:999px;border:1px solid var(--rule);background:var(--paper);font-weight:700;font-size:.8rem;color:var(--ink-2);display:inline-flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap}
+.vb:hover{border-color:var(--ink-3);color:var(--ink)}
+.vb svg{width:15px;height:15px}
+.vb.rec{color:#fff;background:#d6453a;border-color:#d6453a}
+.vb.rec.on svg{animation:blink 1s ease-in-out infinite}
+.vb.icon{padding:0}
+.vb:disabled{opacity:.35;cursor:default}
+@media (max-width:520px){.vrow{grid-template-columns:minmax(0,1fr)}.vbtns{justify-content:flex-start}}
 
 /* ---------- controls ---------- */
 .ctrls{display:flex;align-items:flex-start;justify-content:center;gap:clamp(18px,4vw,36px)}
@@ -362,6 +387,19 @@ body.compact #miniHost{display:block}
 <body>
 <canvas id="confetti" hidden></canvas>
 <div id="miniHost"></div>
+<div class="vmodal" id="vModal" hidden>
+  <div class="vbox" role="dialog" aria-modal="true" aria-labelledby="vTitle">
+    <div class="vh"><h2 id="vTitle">わたしの声</h2><button class="x" id="vClose" aria-label="閉じる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <p class="vlead">先生の声を録音すると、機械の読み上げの代わりにその声が流れます。録音していないところは、これまでどおり機械の声で読み上げます。<b>●録音</b>を押して話し、<b>■停止</b>で保存します（15秒まで）。</p>
+    <p class="vmsg" id="vMsg" hidden></p>
+    <h3 class="vsec">お知らせ</h3>
+    <div class="vlist" id="vListG"></div>
+    <h3 class="vsec" id="vSegTitle">区間が始まるときのひとこと</h3>
+    <div class="vlist" id="vListS"></div>
+    <p class="hint" style="margin-top:14px">録音は、このパソコンのこのブラウザの中にだけ保存されます（ほかの人には送られません）。別のパソコンで使うときは、そちらでも録音してください。</p>
+    <input type="file" id="vFile" accept="audio/*" hidden>
+  </div>
+</div>
 <div class="app" id="app">
   <header class="bar">
     <div class="brand">
@@ -375,7 +413,8 @@ body.compact #miniHost{display:block}
     </nav>
     <div class="tools">
       <label class="tool opt" title="音量"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg><input type="range" id="volR" min="0" max="100" step="5" value="50" aria-label="音量"></label>
-      <button class="tool opt" id="voiceSw" aria-pressed="true" title="音声の読み上げ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/><path d="M8.5 10.5h7"/></svg><span class="lbl-t">読み上げ</span></button>
+      <button class="tool opt" id="voiceBtn" title="先生の声を録音する"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg><span class="lbl-t">わたしの声</span></button>
+      <button class="tool opt" id="voiceSw" aria-pressed="true" title="読み上げ・声のオン／オフ" aria-label="読み上げ・声のオン／オフ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/><path d="M8.5 10.5h7"/></svg></button>
       <div class="tool zoom" aria-label="表示サイズ">
         <button id="zOut" aria-label="小さくする">−</button>
         <output id="zVal">100%</output>
@@ -595,11 +634,27 @@ function speak(text){
     const v=speechSynthesis.getVoices().find(v=>/^ja/i.test(v.lang));if(v)u.voice=v;
     speechSynthesis.speak(u);}catch(e){}
 }
-function announce(kind,text){
+function announce(kind,text,keys){
   if(kind==='warn')chime([E5,C5],0.45);
   else if(kind==='end')chime([C5,E5,G5],0.35);
   else chime([C5,E5,G5,C6],0.38);
-  setTimeout(()=>speak(text),kind==='fin'?1800:kind==='end'?1300:1000);
+  setTimeout(()=>say(keys||[kind],text),kind==='fin'?1800:kind==='end'?1300:1000);
+}
+/* ---------- teacher's recorded voice ---------- */
+const VOICES={};           // key -> object URL
+let vQueue=[],vAudio=null;
+function say(keys,text){
+  if(!S.voice)return;
+  const clips=keys.map(k=>VOICES[k]).filter(Boolean);
+  if(!clips.length){speak(text);return;}
+  try{speechSynthesis.cancel()}catch(e){}
+  vQueue=clips.slice();playNextClip();
+}
+function playNextClip(){
+  const u=vQueue.shift();if(!u){vAudio=null;return;}
+  vAudio=new Audio(u);vAudio.volume=clamp(S.vol*1.6,0.15,1);
+  vAudio.onended=()=>setTimeout(playNextClip,250);vAudio.onerror=playNextClip;
+  vAudio.play().catch(()=>{});
 }
 document.addEventListener('pointerdown',ensureAudio,{once:true});
 let wake=null;
@@ -713,7 +768,7 @@ $('#tStart').onclick=()=>{
   if(running()){R.acc=segElapsed();R.startedAt=null;keepAwake(false);}
   else{
     if(R.done)resetRun();
-    if(R.segIdx===0&&R.acc===0){const g=s.segs[0];speak(`${s.title||'セッション'}を始めます。${segName(g,0)}、${spoken(g.sec)}。${noteOf(g)}`);}
+    if(R.segIdx===0&&R.acc===0){const g=s.segs[0];say(['start','seg:'+g.id],`${s.title||'セッション'}を始めます。${segName(g,0)}、${spoken(g.sec)}。${noteOf(g)}`);}
     R.startedAt=Date.now();keepAwake(true);
   }
   structT();
@@ -726,8 +781,8 @@ function advance(manual){
   const i=R.segIdx, seg=s.segs[i];
   if(i+1<s.segs.length){
     const nx=s.segs[i+1];
-    if(!manual)announce('end',`${segName(seg,i)}、終わりです。次は${segName(nx,i+1)}、${spoken(nx.sec)}です。${noteOf(nx)}`);
-    else if(running())speak(`${segName(nx,i+1)}、${spoken(nx.sec)}。${noteOf(nx)}`);
+    if(!manual)announce('end',`${segName(seg,i)}、終わりです。次は${segName(nx,i+1)}、${spoken(nx.sec)}です。${noteOf(nx)}`,['next','seg:'+nx.id]);
+    else if(running())say(['seg:'+nx.id],`${segName(nx,i+1)}、${spoken(nx.sec)}。${noteOf(nx)}`);
     R.segIdx=i+1;R.acc=0;R.warned=false;
     if(running())R.startedAt=Date.now();
   }else{
@@ -1089,7 +1144,7 @@ function startRing(a){
   $('#aRingText').textContent=`${a.time}　${ringing.name}`;
   $('#aRing').hidden=false;
   if(tab!=='al')showTab('al');
-  announce('fin',`${ringing.name}の時間です`);
+  announce('fin',`${ringing.name}の時間です`,['alarm']);
 }
 function stopRing(){ringing=null;$('#aRing').hidden=true;try{speechSynthesis.cancel()}catch(e){}}
 $('#aStop').onclick=stopRing;
@@ -1162,6 +1217,81 @@ function confetti(){
     requestAnimationFrame(step);
   })(t0);
 }
+
+/* ---------- voice panel ---------- */
+const VSLOTS=[
+  {k:'start',t:'はじめ',d:'セッションを始めるとき',ex:'例「では、始めましょう」'},
+  {k:'warn',t:'残り1分',d:'残り1分になったとき',ex:'例「あと1分です」'},
+  {k:'next',t:'区間の切りかえ',d:'次の区間に進むとき',ex:'例「はい、次に進みます」'},
+  {k:'fin',t:'すべて終了',d:'セッションやカウントダウンが終わったとき',ex:'例「おつかれさまでした」'},
+  {k:'alarm',t:'アラーム',d:'アラームの時刻になったとき',ex:'例「時間です。片付けましょう」'}];
+const VDB={db:null,ok:false,
+  open(){return new Promise(res=>{try{const q=indexedDB.open('session-timer-voice',1);q.onupgradeneeded=()=>q.result.createObjectStore('v');q.onsuccess=()=>{this.db=q.result;this.ok=true;res()};q.onerror=()=>res();}catch(e){res()}})},
+  tx(mode){return this.db.transaction('v',mode).objectStore('v')},
+  all(){return new Promise(res=>{if(!this.ok)return res([]);const out=[];try{const c=this.tx('readonly').openCursor();c.onsuccess=()=>{const k=c.result;if(k){out.push([k.key,k.value]);k.continue()}else res(out)};c.onerror=()=>res(out);}catch(e){res(out)}})},
+  put(k,v){return new Promise(res=>{if(!this.ok)return res();try{const q=this.tx('readwrite').put(v,k);q.onsuccess=q.onerror=()=>res();}catch(e){res()}})},
+  del(k){return new Promise(res=>{if(!this.ok)return res();try{const q=this.tx('readwrite').delete(k);q.onsuccess=q.onerror=()=>res();}catch(e){res()}})}};
+VDB.open().then(()=>VDB.all()).then(rows=>{rows.forEach(([k,b])=>{if(b instanceof Blob)VOICES[k]=URL.createObjectURL(b)});});
+async function saveVoice(k,blob){if(VOICES[k])URL.revokeObjectURL(VOICES[k]);VOICES[k]=URL.createObjectURL(blob);await VDB.put(k,blob);renderVoicePanel();}
+async function delVoice(k){if(VOICES[k])URL.revokeObjectURL(VOICES[k]);delete VOICES[k];await VDB.del(k);renderVoicePanel();}
+let rec=null,recTick=null;
+function vMsg(t){const m=$('#vMsg');m.hidden=!t;m.textContent=t||'';}
+async function startRec(k){
+  if(rec){stopRec();return;}
+  vMsg('');
+  let stream;
+  try{stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});}
+  catch(e){vMsg('マイクが使えませんでした。ブラウザでマイクを「許可」してください。Claudeの画面の中ではマイクが使えないため、GitHubのページかダウンロードしたファイルで開くか、「ファイル」から録音した音声を選んでください。');return;}
+  let mr;try{mr=new MediaRecorder(stream);}catch(e){stream.getTracks().forEach(t=>t.stop());vMsg('このブラウザでは録音できません。ChromeかEdgeでお試しください。');return;}
+  const chunks=[];mr.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};
+  mr.onstop=async()=>{stream.getTracks().forEach(t=>t.stop());clearInterval(recTick);const key=rec.k;rec=null;
+    const blob=new Blob(chunks,{type:mr.mimeType||'audio/webm'});
+    if(blob.size<800){vMsg('うまく録音できませんでした。もう一度お試しください。');renderVoicePanel();return;}
+    await saveVoice(key,blob);playKey(key);};
+  try{speechSynthesis.cancel()}catch(e){}
+  mr.start();rec={k,mr,t0:Date.now(),stopT:setTimeout(stopRec,15000)};
+  recTick=setInterval(renderVoicePanel,250);renderVoicePanel();
+}
+function stopRec(){if(rec&&rec.mr.state!=='inactive'){clearTimeout(rec.stopT);rec.mr.stop();}}
+function playKey(k){if(VOICES[k]){vQueue=[VOICES[k]];playNextClip();}}
+let fileKey=null;
+$('#vFile').addEventListener('change',async e=>{const f=e.target.files[0];e.target.value='';if(!f||!fileKey)return;
+  if(f.size>8e6){vMsg('ファイルが大きすぎます（8MBまで）。短い音声を選んでください。');return;}
+  vMsg('');await saveVoice(fileKey,f);playKey(fileKey);});
+const ICON_MIC='<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>';
+const ICON_STOP='<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>';
+const ICON_FILE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></svg>';
+function vRow(k,title,desc,color){
+  const has=!!VOICES[k],on=rec&&rec.k===k;
+  const sec=on?Math.floor((Date.now()-rec.t0)/1000):0;
+  return `<div class="vrow" data-k="${esc(k)}"><div><div class="vt"><i style="--c:${color||'var(--ink-3)'}"></i><span>${esc(title)}</span></div>
+    <div class="vd${has?' ok':''}">${on?`録音中… ${sec}秒（もう一度押すと保存）`:has?'✓ 録音済み — この声が流れます':esc(desc)}</div></div>
+    <div class="vbtns">
+      <button class="vb rec${on?' on':''}" data-act="rec" ${rec&&!on?'disabled':''}>${on?ICON_STOP+'停止':ICON_MIC+(has?'録り直す':'録音')}</button>
+      <button class="vb icon" data-act="play" aria-label="聞く" ${has&&!rec?'':'disabled'}>${ICON_PLAY}</button>
+      <button class="vb icon" data-act="file" aria-label="音声ファイルを選ぶ" title="音声ファイルを選ぶ" ${rec?'disabled':''}>${ICON_FILE}</button>
+      <button class="vb icon" data-act="del" aria-label="消す" ${has&&!rec?'':'disabled'}>${ICON_X}</button>
+    </div></div>`;
+}
+function renderVoicePanel(){
+  if($('#vModal').hidden)return;
+  setH($('#vListG'),VSLOTS.map(v=>vRow(v.k,v.t,`${v.d}　${v.ex}`)).join(''));
+  const s=cur();
+  $('#vSegTitle').textContent=`区間が始まるときのひとこと（${s?(s.title||'無題'):''}）`;
+  setH($('#vListS'),s&&s.segs.length?s.segs.map((g,i)=>vRow('seg:'+g.id,`${i+1}. ${segName(g,i)}`,noteOf(g)?`例「${noteOf(g)}」`:'この区間が始まるとき',col(i))).join(''):'<div class="empty">区間がありません</div>');
+}
+function vClick(e){
+  const b=e.target.closest('[data-act]');if(!b||b.disabled)return;
+  const k=b.closest('.vrow').dataset.k,a=b.dataset.act;ensureAudio();
+  if(a==='rec')startRec(k);else if(a==='play')playKey(k);
+  else if(a==='file'){fileKey=k;$('#vFile').click();}
+  else if(a==='del')delVoice(k);
+}
+$('#vListG').addEventListener('click',vClick);$('#vListS').addEventListener('click',vClick);
+function openVoice(){$('#vModal').hidden=false;vMsg(VDB.ok?'':'このブラウザでは録音を保存できないため、ページを閉じると録音は消えます。');renderVoicePanel();}
+function closeVoice(){stopRec();$('#vModal').hidden=true;}
+$('#voiceBtn').onclick=openVoice;$('#vClose').onclick=closeVoice;
+$('#vModal').addEventListener('click',e=>{if(e.target.id==='vModal')closeVoice();});
 
 /* ---------- mini window (Document Picture-in-Picture, or compact page) ---------- */
 const ICON_SKIP='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 5.5v13l9-6.5z"/><rect x="16" y="5.5" width="3" height="13" rx="1"/></svg>';
@@ -1268,6 +1398,7 @@ function frame(){
 document.addEventListener('keydown',e=>{
   const tag=document.activeElement.tagName;
   if(/INPUT|TEXTAREA/.test(tag)||e.ctrlKey||e.metaKey||e.altKey)return;
+  if(!$('#vModal').hidden&&e.key!=='Escape')return;
   if(e.code==='Space'){
     if(tag==='BUTTON')return;
     e.preventDefault();
@@ -1279,6 +1410,7 @@ document.addEventListener('keydown',e=>{
   else if((e.key==='n'||e.key==='N')&&tab==='timer'){$('#tSkip').click();}
   else if((e.key==='l'||e.key==='L')&&tab==='sw'){$('#sLap').click();}
   else if(e.key==='m'||e.key==='M'){openMini();}
+  else if(e.key==='Escape'&&!$('#vModal').hidden)closeVoice();
   else if(e.key==='Escape'&&MINI&&MINI.kind==='inline')closeMini();
   else if(e.key==='Escape'&&app.classList.contains('stage'))setStage(false);
 });
