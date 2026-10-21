@@ -59,6 +59,11 @@ svg{display:block}
 .tool svg{width:18px;height:18px;flex:none}
 button.tool:hover{color:var(--ink);border-color:var(--ink-3)}
 #voiceSw[aria-pressed="false"]{opacity:.5;text-decoration:line-through}
+.sync{display:inline-flex;align-items:center;gap:4px;font-size:.72rem;font-weight:700;color:var(--ink-3);cursor:default;white-space:nowrap}
+.sync svg{width:15px;height:15px}
+.sync[data-st="ok"] svg{color:var(--c2)}
+.sync[data-st="saving"] svg,.sync[data-st="load"] svg{animation:blink 1s ease-in-out infinite}
+.sync[data-st="err"]{color:var(--c0)}
 #miniBtn[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 .tool input[type=range]{width:72px;accent-color:var(--ink)}
 .zoom{padding:0 4px;gap:0}
@@ -471,7 +476,7 @@ body.compact #miniHost{display:block}
         </div>
       </div>
       <div class="hr"></div>
-      <div class="sh"><h2>セッション</h2><button class="chipbtn" id="addSess"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>新規</button></div>
+      <div class="sh"><h2>セッション</h2><span class="sync" id="syncChip" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18.5h10a4 4 0 0 0 .6-7.95A6 6 0 0 0 6.1 9.6 4.5 4.5 0 0 0 7 18.5z"/></svg><span>同期</span></span><button class="chipbtn" id="addSess" style="margin-left:auto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>新規</button></div>
       <div class="sess-list" id="sessList"></div>
       <div class="hr"></div>
       <div class="fld"><label for="sessTitle">題名</label><input class="in title" id="sessTitle" maxlength="40" placeholder="例：朝の集中タイム"></div>
@@ -587,8 +592,63 @@ if(!Array.isArray(S.alarms))S.alarms=[
   {id:uid(),time:'10:35',title:'1時間目終了',on:false},
   {id:uid(),time:'12:25',title:'給食',on:false},
   {id:uid(),time:'15:30',title:'下校準備',on:false}];
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function save(){
+  if(lastSig!==null){const g=syncSig();if(g!==lastSig){lastSig=g;S.savedAt=Date.now();queuePush();}}
+  try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
+}
 const cur=()=>S.sessions.find(s=>s.id===S.currentId);
+
+/* ---------- Google account sync (only when running as a Google Apps Script web app) ---------- */
+const GAS=typeof google!=='undefined'&&google.script&&google.script.run;
+const syncPart=()=>({sessions:S.sessions,currentId:S.currentId,tDir:S.tDir,alarms:S.alarms,voice:S.voice,builtinOff:S.builtinOff||{}});
+const syncSig=()=>JSON.stringify(syncPart());
+let lastSig=null,pulled=false,pushT=null,pending=null,syncState='';
+function setSync(st){
+  syncState=st;const c=document.getElementById('syncChip');if(!c)return;
+  c.hidden=!GAS;c.dataset.st=st;
+  c.lastChild.textContent={ok:'同期済み',saving:'保存中…',load:'読み込み中…',err:'オフライン'}[st]||'';
+  c.title={ok:'設定はGoogleアカウントに保存されています。同じアカウントなら、どのパソコンでも同じ設定になります。',saving:'Googleアカウントに保存しています',load:'Googleアカウントから設定を読み込んでいます',err:'Googleに保存できませんでした。つながったら自動で保存します。'}[st]||'';
+}
+function queuePush(){
+  if(!GAS)return;
+  clearTimeout(pushT);setSync('saving');
+  pushT=setTimeout(()=>{
+    if(!pulled){queuePush();return;}
+    const body=JSON.stringify(Object.assign(syncPart(),{savedAt:S.savedAt||Date.now()}));
+    google.script.run.withSuccessHandler(()=>setSync('ok')).withFailureHandler(()=>{setSync('err');setTimeout(queuePush,30000);}).saveState(body);
+  },1200);
+}
+function busyForSync(){
+  const a=document.activeElement;
+  return running()||wRun()||(a&&a.closest&&a.closest('.side,.vbox')&&/INPUT|TEXTAREA/.test(a.tagName));
+}
+function applyRemote(rm){
+  const prevCur=S.currentId;
+  ['sessions','tDir','alarms','voice','builtinOff'].forEach(k=>{if(rm[k]!==undefined)S[k]=rm[k];});
+  if(rm.currentId&&rm.sessions.some(x=>x.id===rm.currentId))S.currentId=rm.currentId;
+  if(!S.sessions.find(x=>x.id===S.currentId))S.currentId=S.sessions[0].id;
+  S.savedAt=rm.savedAt;lastSig=syncSig();
+  try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
+  for(const k in BUILTIN){if(VOICES[k]===BUILTIN[k])delete VOICES[k];}applyBuiltins();
+  if(prevCur!==S.currentId||!R.done&&R.segIdx>=(cur().segs.length||1))resetRun();
+  setTDir(S.tDir==='up'?'up':'down');paintVoice();renderAlarms();structT();
+}
+function pull(){
+  if(!GAS)return;
+  if(!pulled)setSync('load');
+  google.script.run.withSuccessHandler(txt=>{
+    let rm=null;try{rm=txt?JSON.parse(txt):null}catch(e){}
+    const first=!pulled;pulled=true;
+    if(rm&&Array.isArray(rm.sessions)&&rm.sessions.length&&(rm.savedAt||0)>(S.savedAt||0)){
+      if(busyForSync())pending=rm;else applyRemote(rm);
+      setSync('ok');
+    }else if(!rm||(S.savedAt||0)>(rm.savedAt||0)){
+      if(!S.savedAt)S.savedAt=Date.now();
+      queuePush();
+    }else setSync('ok');
+  }).withFailureHandler(()=>{pulled=true;setSync('err');}).loadState();
+}
+setInterval(()=>{if(pending&&!busyForSync()){const rm=pending;pending=null;if((rm.savedAt||0)>(S.savedAt||0))applyRemote(rm);}},1000);
 
 /* ---------- helpers ---------- */
 const p2=n=>String(n).padStart(2,'0');
@@ -1248,7 +1308,7 @@ async function startRec(k){
   vMsg('');
   let stream;
   try{stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});}
-  catch(e){vMsg('マイクが使えませんでした。ブラウザでマイクを「許可」してください。Claudeの画面の中ではマイクが使えないため、GitHubのページかダウンロードしたファイルで開くか、「ファイル」から録音した音声を選んでください。');return;}
+  catch(e){vMsg('マイクが使えませんでした。ブラウザでマイクを「許可」してください。Claudeの画面やGoogleのアプリ（GAS版）の中ではマイクが使えないことがあります。そのときは、GitHubのページかダウンロードしたファイルで開くか、📁から録音した音声ファイルを選んでください。');return;}
   let mr;try{mr=new MediaRecorder(stream);}catch(e){stream.getTracks().forEach(t=>t.stop());vMsg('このブラウザでは録音できません。ChromeかEdgeでお試しください。');return;}
   const chunks=[];mr.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};
   mr.onstop=async()=>{stream.getTracks().forEach(t=>t.stop());clearInterval(recTick);const key=rec.k;rec=null;
@@ -1424,8 +1484,11 @@ document.addEventListener('keydown',e=>{
 if('speechSynthesis' in window)try{speechSynthesis.getVoices();}catch(e){}
 
 /* ---------- boot ---------- */
+lastSig=syncSig();
+if(GAS){pull();setInterval(()=>{if(!document.hidden)pull();},60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)pull();});}
 setTDir(S.tDir==='up'?'up':'down');
 applyZoom();
+setSync(GAS?'load':'');
 setSDir('up');
 renderAlarms();
 structT();
