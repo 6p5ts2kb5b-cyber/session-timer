@@ -287,6 +287,7 @@ body.compact #miniHost{display:block}
 .danger:hover,.danger.arm{border-color:var(--c0);color:var(--c0)}
 .empty{font-size:.85rem;color:var(--ink-3);padding:10px 0;text-align:center}
 .hint{font-size:.76rem;color:var(--ink-3);line-height:1.7;margin:0}
+.hint.rec a{color:var(--c3);font-weight:700;margin-left:.3em}
 .hint kbd{font-family:var(--f-num);font-size:.72rem;border:1px solid var(--rule);border-bottom-width:2px;border-radius:5px;padding:0 5px;background:var(--paper);color:var(--ink-2)}
 
 /* ---------- stopwatch ---------- */
@@ -491,6 +492,7 @@ body.compact #miniHost{display:block}
         </div>
       </div>
       <div class="sf"><span>合計 <b id="sessTotal">0:00</b></span><button class="danger" id="delSess">このセッションを削除</button></div>
+      <p class="hint rec" id="recBox" hidden>削除したセッションやアラームは消えずに「アーカイブ」に残ります。変更は「操作ログ」に記録されます。<a id="recLink" href="#" target="_blank" rel="noopener">記録シートを開く</a></p>
       <p class="hint">各区間の残り1分と終了時に、チャイムと声でお知らせします。各区間の「指示」は大画面と小窓に大きく出ます。時計の数字をタップすると、カウントダウンとアップを切り替えられます。<kbd>Space</kbd> 開始／停止　<kbd>N</kbd> 次の区間　<kbd>F</kbd> 大画面　<kbd>M</kbd> 小窓　<kbd>＋</kbd><kbd>−</kbd> サイズ</p>
     </aside>
   </section>
@@ -639,6 +641,7 @@ function pull(){
   google.script.run.withSuccessHandler(txt=>{
     let rm=null;try{rm=txt?JSON.parse(txt):null}catch(e){}
     const first=!pulled;pulled=true;
+    if(first)google.script.run.withSuccessHandler(u=>{if(u){$('#recLink').href=u;$('#recBox').hidden=false;}}).getRecordUrl();
     if(rm&&Array.isArray(rm.sessions)&&rm.sessions.length&&(rm.savedAt||0)>(S.savedAt||0)){
       if(busyForSync())pending=rm;else applyRemote(rm);
       setSync('ok');
