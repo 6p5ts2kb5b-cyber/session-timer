@@ -228,6 +228,10 @@ body.compact #miniHost{display:block}
 .vb:disabled{opacity:.35;cursor:default}
 @media (max-width:520px){.vrow{grid-template-columns:minmax(0,1fr)}.vbtns{justify-content:flex-start}}
 
+.radd{display:flex;gap:8px;margin-top:14px}
+.radd .in{flex:1;min-width:0}
+.radd .radd-go{background:var(--ink);color:var(--paper);border-color:var(--ink);padding:0 18px;height:auto}
+.rrole{font-size:.72rem;font-weight:700;color:var(--ink-3);border:1px solid var(--rule);border-radius:999px;padding:1px 9px;white-space:nowrap}
 /* ---------- controls ---------- */
 .ctrls{display:flex;align-items:flex-start;justify-content:center;gap:clamp(18px,4vw,36px)}
 .cb{display:flex;flex-direction:column;align-items:center;gap:7px;border:0;background:none;padding:0;font-size:.78em;font-weight:700;color:var(--ink-2)}
@@ -406,6 +410,19 @@ body.compact #miniHost{display:block}
     <input type="file" id="vFile" accept="audio/*" hidden>
   </div>
 </div>
+<div class="vmodal" id="rModal" hidden>
+  <div class="vbox" role="dialog" aria-modal="true" aria-labelledby="rTitle">
+    <div class="vh"><h2 id="rTitle">名簿（使える人）</h2><button class="x" id="rClose" aria-label="閉じる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <p class="vlead">このアプリを使えるのは、管理者と、ここに入っている人だけです。入っていない人が開いても「許可がありません」と出るだけで、データは見えません。使う人のデータは、それぞれの人のアカウントに別々に保存されます。</p>
+    <p class="vmsg" id="rMsg" hidden></p>
+    <form class="radd" id="rForm"><input class="in" id="rEmail" type="email" inputmode="email" autocomplete="off" placeholder="例：tanaka@sakado.ed.jp" aria-label="追加するメールアドレス"><button class="vb radd-go" type="submit">追加</button></form>
+    <h3 class="vsec">使える人</h3>
+    <div class="vlist" id="rList"><div class="empty">読み込み中…</div></div>
+    <h3 class="vsec" id="rDenTitle" hidden>許可なく開こうとした人（最新30件）</h3>
+    <div class="vlist" id="rDen"></div>
+    <p class="hint" style="margin-top:14px">名簿から外しても、その人のデータは消えません。追加・外した記録は、管理者の記録シート（操作ログ・アーカイブ）に残ります。</p>
+  </div>
+</div>
 <div class="app" id="app">
   <header class="bar">
     <div class="brand">
@@ -493,6 +510,7 @@ body.compact #miniHost{display:block}
       </div>
       <div class="sf"><span>合計 <b id="sessTotal">0:00</b></span><button class="danger" id="delSess">このセッションを削除</button></div>
       <p class="hint rec" id="recBox" hidden>削除したセッションやアラームは消えずに「アーカイブ」に残ります。変更は「操作ログ」に記録されます。<a id="recLink" href="#" target="_blank" rel="noopener">記録シートを開く</a></p>
+      <button class="chipbtn" id="rosterBtn" hidden style="align-self:flex-start"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M17 8v6M14 11h6"/></svg>名簿（使える人）</button>
       <p class="hint">各区間の残り1分と終了時に、チャイムと声でお知らせします。各区間の「指示」は大画面と小窓に大きく出ます。時計の数字をタップすると、カウントダウンとアップを切り替えられます。<kbd>Space</kbd> 開始／停止　<kbd>N</kbd> 次の区間　<kbd>F</kbd> 大画面　<kbd>M</kbd> 小窓　<kbd>＋</kbd><kbd>−</kbd> サイズ</p>
     </aside>
   </section>
@@ -641,7 +659,8 @@ function pull(){
   google.script.run.withSuccessHandler(txt=>{
     let rm=null;try{rm=txt?JSON.parse(txt):null}catch(e){}
     const first=!pulled;pulled=true;
-    if(first)google.script.run.withSuccessHandler(u=>{if(u){$('#recLink').href=u;$('#recBox').hidden=false;}}).getRecordUrl();
+    if(first){google.script.run.withSuccessHandler(u=>{if(u){$('#recLink').href=u;$('#recBox').hidden=false;}}).getRecordUrl();
+      google.script.run.withSuccessHandler(w=>{if(w&&w.owner)$('#rosterBtn').hidden=false;}).whoAmI();}
     if(rm&&Array.isArray(rm.sessions)&&rm.sessions.length&&(rm.savedAt||0)>(S.savedAt||0)){
       if(busyForSync())pending=rm;else applyRemote(rm);
       setSync('ok');
@@ -1363,6 +1382,31 @@ function closeVoice(){stopRec();$('#vModal').hidden=true;}
 $('#voiceBtn').onclick=openVoice;$('#vClose').onclick=closeVoice;
 $('#vModal').addEventListener('click',e=>{if(e.target.id==='vModal')closeVoice();});
 
+/* ---------- roster (GAS only, owner only) ---------- */
+let rArm=null;
+function rMsg(t){const m=$('#rMsg');m.hidden=!t;m.textContent=t||'';}
+function fmtD(iso){try{const d=new Date(iso);return `${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`}catch(e){return ''}}
+function renderRoster(d){
+  const rows=[`<div class="vrow"><div><div class="vt"><span>${esc(d.owner)}</span></div><div class="vd">管理者（あなた）</div></div><div class="vbtns"><span class="rrole">管理者</span></div></div>`]
+    .concat(d.roster.map(x=>`<div class="vrow"><div><div class="vt"><span>${esc(x.email)}</span></div><div class="vd">${fmtD(x.addedAt)} に追加</div></div><div class="vbtns"><button class="vb" data-rm="${esc(x.email)}">${rArm===x.email?'もう一度押すと外します':'名簿から外す'}</button></div></div>`));
+  $('#rList').innerHTML=rows.join('');
+  $('#rDenTitle').hidden=!d.denied.length;
+  $('#rDen').innerHTML=d.denied.map(x=>`<div class="vrow"><div><div class="vt"><span>${esc(x.email)}</span></div><div class="vd">${fmtD(x.at)} に開こうとしました</div></div><div class="vbtns">${/@/.test(x.email)?`<button class="vb" data-add="${esc(x.email)}">名簿に追加</button>`:''}</div></div>`).join('');
+}
+let rData=null;
+function rCall(fn,arg){
+  rMsg('');
+  google.script.run.withSuccessHandler(d=>{rData=d;renderRoster(d);}).withFailureHandler(e=>rMsg(String(e&&e.message||e).replace(/^Error:\s*/,'')))[fn](arg);
+}
+$('#rosterBtn').onclick=()=>{$('#rModal').hidden=false;rArm=null;rCall('rosterList');setTimeout(()=>$('#rEmail').focus(),50);};
+$('#rClose').onclick=()=>{$('#rModal').hidden=true;};
+$('#rModal').addEventListener('click',e=>{if(e.target.id==='rModal')$('#rModal').hidden=true;});
+$('#rForm').addEventListener('submit',e=>{e.preventDefault();const v=$('#rEmail').value.trim();if(!v)return;$('#rEmail').value='';rCall('rosterAdd',v);});
+$('#rList').addEventListener('click',e=>{const b=e.target.closest('[data-rm]');if(!b)return;const em=b.dataset.rm;
+  if(rArm!==em){rArm=em;renderRoster(rData);clearTimeout(rArm._t);setTimeout(()=>{if(rArm===em){rArm=null;renderRoster(rData);}},3000);return;}
+  rArm=null;rCall('rosterRemove',em);});
+$('#rDen').addEventListener('click',e=>{const b=e.target.closest('[data-add]');if(b)rCall('rosterAdd',b.dataset.add);});
+
 /* ---------- mini window (Document Picture-in-Picture, or compact page) ---------- */
 const ICON_SKIP='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 5.5v13l9-6.5z"/><rect x="16" y="5.5" width="3" height="13" rx="1"/></svg>';
 const ICON_LAP='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21V4"/><path d="M6 4h11l-2.5 4L17 12H6"/></svg>';
@@ -1468,7 +1512,7 @@ function frame(){
 document.addEventListener('keydown',e=>{
   const tag=document.activeElement.tagName;
   if(/INPUT|TEXTAREA/.test(tag)||e.ctrlKey||e.metaKey||e.altKey)return;
-  if(!$('#vModal').hidden&&e.key!=='Escape')return;
+  if((!$('#vModal').hidden||!$('#rModal').hidden)&&e.key!=='Escape')return;
   if(e.code==='Space'){
     if(tag==='BUTTON')return;
     e.preventDefault();
@@ -1481,6 +1525,7 @@ document.addEventListener('keydown',e=>{
   else if((e.key==='l'||e.key==='L')&&tab==='sw'){$('#sLap').click();}
   else if(e.key==='m'||e.key==='M'){openMini();}
   else if(e.key==='Escape'&&!$('#vModal').hidden)closeVoice();
+  else if(e.key==='Escape'&&!$('#rModal').hidden)$('#rModal').hidden=true;
   else if(e.key==='Escape'&&MINI&&MINI.kind==='inline')closeMini();
   else if(e.key==='Escape'&&app.classList.contains('stage'))setStage(false);
 });

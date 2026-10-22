@@ -7,6 +7,9 @@
  * ・削除したセッションやアラームは消さずに「記録シート」のアーカイブに残します。
  * ・変更した内容は「記録シート」の操作ログに残します。
  * ・ほかの人のデータは見えません（それぞれの人のアカウントに別々に保存されます）。
+ * ・使えるのは「管理者」と「名簿」に入っている人だけです。
+ *   はじめに、このエディタで関数「はじめの設定」を実行すると、実行した人が管理者になります。
+ *   名簿の追加・削除は、アプリの「名簿」ボタンから管理者だけができます。
  */
 const APP_NAME = 'セッションタイマー';
 const STATE_KEY = 'session-timer-state';
@@ -14,14 +17,53 @@ const BOOK_KEY = 'session-timer-record-book';
 const CHUNK = 2000;          // 1つの保存枠に入れる文字数（上限9KBを超えない大きさ）
 const MERGE_SEC = 120;       // 同じものを続けて変更したときは、ログを1行にまとめる秒数
 
+const OWNER_KEY = 'owner';
+const ROSTER_KEY = 'roster';
+const DENIED_KEY = 'denied';
+
+/** はじめに1回だけ、エディタで実行してください（実行した人が管理者になります） */
+function はじめの設定() {
+  const me = myEmail_();
+  if (!me) throw new Error('メールアドレスが取得できませんでした。学校のアカウントで開いているか確認してください。');
+  const sp = PropertiesService.getScriptProperties();
+  const owner = sp.getProperty(OWNER_KEY);
+  if (owner && owner !== me) throw new Error('管理者はすでに ' + owner + ' に設定されています。');
+  sp.setProperty(OWNER_KEY, me);
+  book_(); // 記録シートを作っておく
+  writeLog_([['管理者を設定', me]]);
+  console.log('管理者を ' + me + ' に設定しました。次はデプロイに進んでください。');
+}
+
 function doGet() {
+  const me = myEmail_();
+  const owner = PropertiesService.getScriptProperties().getProperty(OWNER_KEY);
+  if (!owner) return gate_('まだ準備ができていません', '管理者の先生が、エディタで「はじめの設定」を実行すると使えるようになります。', '');
+  if (!isAllowed_(me)) {
+    noteDenied_(me);
+    return gate_('このアプリを使う許可がありません', '使いたい場合は、管理者の先生に「名簿」へ追加してもらってください。', me);
+  }
   return HtmlService.createHtmlOutput(HTML_LINES.join('\n'))
     .setTitle(APP_NAME)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1, viewport-fit=cover');
 }
 
+/** 許可されていない人に見せる画面（データは一切入れない） */
+function gate_(title, msg, email) {
+  const esc = function (t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  const html = '<!DOCTYPE html><html lang="ja"><head><base target="_top"><meta charset="utf-8"><style>' +
+    'body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f2f3ef;color:#14181d;font-family:"BIZ UDPGothic","BIZ UDPゴシック","Hiragino Sans","Noto Sans JP",sans-serif;padding:16px;box-sizing:border-box}' +
+    '.b{max-width:460px;background:#fff;border:1px solid #dcdfdc;border-radius:18px;padding:28px 24px;line-height:1.8}' +
+    'h1{font-size:1.25rem;margin:0 0 .6em}p{margin:0 0 .6em;color:#4c5560}.e{font-size:.85rem;color:#8c949d;margin-top:1em}' +
+    '@media (prefers-color-scheme:dark){body{background:#0f1215;color:#eceff2}.b{background:#171b20;border-color:#272d34}p{color:#a3acb6}}' +
+    '</style></head><body><div class="b"><h1>' + esc(title) + '</h1><p>' + esc(msg) + '</p>' +
+    (email ? '<p class="e">いまのアカウント：' + esc(email) + '</p>' : '') + '</div></body></html>';
+  return HtmlService.createHtmlOutput(html).setTitle(APP_NAME)
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+
 /** 保存してある設定を読み込む（なければ null） */
 function loadState() {
+  assertAllowed_();
   const props = PropertiesService.getUserProperties();
   const n = Number(props.getProperty(STATE_KEY + ':n') || 0);
   if (!n) return null;
@@ -32,6 +74,7 @@ function loadState() {
 
 /** 設定を保存する（変更点は記録シートに残す） */
 function saveState(json) {
+  assertAllowed_();
   if (typeof json !== 'string' || json.length > 300000) throw new Error('保存できない大きさです');
   const next = JSON.parse(json); // 壊れたデータは保存しない
   const lock = LockService.getUserLock();
@@ -57,10 +100,107 @@ function saveState(json) {
 
 /** 記録シートのURL（はじめて呼ばれたときに作ります） */
 function getRecordUrl() {
+  assertAllowed_();
   try { return book_().getUrl(); } catch (e) { console.error(e); return ''; }
 }
 
+/** 自分のメールと役割（アプリの画面が使います） */
+function whoAmI() {
+  assertAllowed_();
+  const me = myEmail_();
+  return { email: me, owner: me === PropertiesService.getScriptProperties().getProperty(OWNER_KEY) };
+}
+
+/** 名簿を見る（管理者だけ） */
+function rosterList() {
+  assertOwner_();
+  const sp = PropertiesService.getScriptProperties();
+  return { owner: sp.getProperty(OWNER_KEY), roster: readJson_(sp, ROSTER_KEY, []), denied: readJson_(sp, DENIED_KEY, []) };
+}
+
+/** 名簿に追加する（管理者だけ） */
+function rosterAdd(email) {
+  assertOwner_();
+  email = String(email || '').trim().toLowerCase();
+  const owner = PropertiesService.getScriptProperties().getProperty(OWNER_KEY);
+  const domain = owner.split('@')[1];
+  if (!/^[^@\s]+@[^@\s]+$/.test(email)) throw new Error('メールアドレスの形が正しくありません。');
+  if (email.split('@')[1] !== domain) throw new Error('学校のアカウント（@' + domain + '）だけ追加できます。');
+  const lock = LockService.getScriptLock(); lock.waitLock(10000);
+  try {
+    const sp = PropertiesService.getScriptProperties();
+    const roster = readJson_(sp, ROSTER_KEY, []);
+    if (email === owner || roster.some(function (r) { return r.email === email; })) return rosterList();
+    roster.push({ email: email, addedAt: new Date().toISOString() });
+    sp.setProperty(ROSTER_KEY, JSON.stringify(roster));
+    sp.setProperty(DENIED_KEY, JSON.stringify(readJson_(sp, DENIED_KEY, []).filter(function (d) { return d.email !== email; })));
+  } finally { lock.releaseLock(); }
+  writeLog_([['名簿に追加', email]]);
+  return rosterList();
+}
+
+/** 名簿から外す（管理者だけ）。外した記録はアーカイブに残り、その人のデータも消えません */
+function rosterRemove(email) {
+  assertOwner_();
+  email = String(email || '').trim().toLowerCase();
+  let removed = null;
+  const lock = LockService.getScriptLock(); lock.waitLock(10000);
+  try {
+    const sp = PropertiesService.getScriptProperties();
+    const roster = readJson_(sp, ROSTER_KEY, []);
+    removed = roster.filter(function (r) { return r.email === email; })[0] || null;
+    if (!removed) return rosterList();
+    sp.setProperty(ROSTER_KEY, JSON.stringify(roster.filter(function (r) { return r.email !== email; })));
+  } finally { lock.releaseLock(); }
+  writeArchive_([['名簿から外した人', email, JSON.stringify(removed)]]);
+  writeLog_([['名簿から外す（アーカイブへ）', email + '（この人のデータは消えていません）']]);
+  return rosterList();
+}
+
 /* ---------- ここから下は内部の処理 ---------- */
+
+function myEmail_() {
+  try { return String(Session.getActiveUser().getEmail() || '').toLowerCase(); } catch (e) { return ''; }
+}
+function readJson_(sp, key, def) {
+  try { const v = sp.getProperty(key); return v ? JSON.parse(v) : def; } catch (e) { return def; }
+}
+function isAllowed_(email) {
+  if (!email) return false;
+  const sp = PropertiesService.getScriptProperties();
+  if (email === sp.getProperty(OWNER_KEY)) return true;
+  return readJson_(sp, ROSTER_KEY, []).some(function (r) { return r.email === email; });
+}
+function assertAllowed_() {
+  if (!isAllowed_(myEmail_())) throw new Error('このアプリを使う許可がありません');
+}
+function assertOwner_() {
+  if (myEmail_() !== PropertiesService.getScriptProperties().getProperty(OWNER_KEY)) throw new Error('管理者だけができる操作です');
+}
+/** 許可されていない人が開こうとした記録（最新30件、管理者が名簿画面で見られる） */
+function noteDenied_(email) {
+  if (!email) email = '（アカウント不明）';
+  try {
+    const lock = LockService.getScriptLock(); lock.waitLock(5000);
+    try {
+      const sp = PropertiesService.getScriptProperties();
+      const list = readJson_(sp, DENIED_KEY, []).filter(function (d) { return d.email !== email; });
+      list.unshift({ email: email, at: new Date().toISOString() });
+      sp.setProperty(DENIED_KEY, JSON.stringify(list.slice(0, 30)));
+    } finally { lock.releaseLock(); }
+  } catch (e) { console.error(e); }
+}
+function writeLog_(rows) {
+  const log = book_().getSheetByName('操作ログ');
+  const now = new Date();
+  log.getRange(log.getLastRow() + 1, 1, rows.length, 3).setValues(rows.map(function (r) { return [now, r[0], r[1]]; }));
+}
+function writeArchive_(rows) {
+  const ss = book_();
+  const arc = ss.getSheetByName('アーカイブ') || ss.insertSheet('アーカイブ');
+  const now = new Date();
+  arc.getRange(arc.getLastRow() + 1, 1, rows.length, 4).setValues(rows.map(function (r) { return [now].concat(r); }));
+}
 
 function book_() {
   const props = PropertiesService.getUserProperties();
@@ -388,6 +528,10 @@ const HTML_LINES = [
 ".vb:disabled{opacity:.35;cursor:default}",
 "@media (max-width:520px){.vrow{grid-template-columns:minmax(0,1fr)}.vbtns{justify-content:flex-start}}",
 "",
+".radd{display:flex;gap:8px;margin-top:14px}",
+".radd .in{flex:1;min-width:0}",
+".radd .radd-go{background:var(--ink);color:var(--paper);border-color:var(--ink);padding:0 18px;height:auto}",
+".rrole{font-size:.72rem;font-weight:700;color:var(--ink-3);border:1px solid var(--rule);border-radius:999px;padding:1px 9px;white-space:nowrap}",
 "/* ---------- controls ---------- */",
 ".ctrls{display:flex;align-items:flex-start;justify-content:center;gap:clamp(18px,4vw,36px)}",
 ".cb{display:flex;flex-direction:column;align-items:center;gap:7px;border:0;background:none;padding:0;font-size:.78em;font-weight:700;color:var(--ink-2)}",
@@ -566,6 +710,19 @@ const HTML_LINES = [
 "    <input type=\"file\" id=\"vFile\" accept=\"audio/*\" hidden>",
 "  </div>",
 "</div>",
+"<div class=\"vmodal\" id=\"rModal\" hidden>",
+"  <div class=\"vbox\" role=\"dialog\" aria-modal=\"true\" aria-labelledby=\"rTitle\">",
+"    <div class=\"vh\"><h2 id=\"rTitle\">名簿（使える人）</h2><button class=\"x\" id=\"rClose\" aria-label=\"閉じる\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.6\" stroke-linecap=\"round\"><path d=\"M6 6l12 12M18 6L6 18\"/></svg></button></div>",
+"    <p class=\"vlead\">このアプリを使えるのは、管理者と、ここに入っている人だけです。入っていない人が開いても「許可がありません」と出るだけで、データは見えません。使う人のデータは、それぞれの人のアカウントに別々に保存されます。</p>",
+"    <p class=\"vmsg\" id=\"rMsg\" hidden></p>",
+"    <form class=\"radd\" id=\"rForm\"><input class=\"in\" id=\"rEmail\" type=\"email\" inputmode=\"email\" autocomplete=\"off\" placeholder=\"例：tanaka@sakado.ed.jp\" aria-label=\"追加するメールアドレス\"><button class=\"vb radd-go\" type=\"submit\">追加</button></form>",
+"    <h3 class=\"vsec\">使える人</h3>",
+"    <div class=\"vlist\" id=\"rList\"><div class=\"empty\">読み込み中…</div></div>",
+"    <h3 class=\"vsec\" id=\"rDenTitle\" hidden>許可なく開こうとした人（最新30件）</h3>",
+"    <div class=\"vlist\" id=\"rDen\"></div>",
+"    <p class=\"hint\" style=\"margin-top:14px\">名簿から外しても、その人のデータは消えません。追加・外した記録は、管理者の記録シート（操作ログ・アーカイブ）に残ります。</p>",
+"  </div>",
+"</div>",
 "<div class=\"app\" id=\"app\">",
 "  <header class=\"bar\">",
 "    <div class=\"brand\">",
@@ -653,6 +810,7 @@ const HTML_LINES = [
 "      </div>",
 "      <div class=\"sf\"><span>合計 <b id=\"sessTotal\">0:00</b></span><button class=\"danger\" id=\"delSess\">このセッションを削除</button></div>",
 "      <p class=\"hint rec\" id=\"recBox\" hidden>削除したセッションやアラームは消えずに「アーカイブ」に残ります。変更は「操作ログ」に記録されます。<a id=\"recLink\" href=\"#\" target=\"_blank\" rel=\"noopener\">記録シートを開く</a></p>",
+"      <button class=\"chipbtn\" id=\"rosterBtn\" hidden style=\"align-self:flex-start\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"9\" cy=\"8\" r=\"3.5\"/><path d=\"M2.5 20a6.5 6.5 0 0 1 13 0M17 8v6M14 11h6\"/></svg>名簿（使える人）</button>",
 "      <p class=\"hint\">各区間の残り1分と終了時に、チャイムと声でお知らせします。各区間の「指示」は大画面と小窓に大きく出ます。時計の数字をタップすると、カウントダウンとアップを切り替えられます。<kbd>Space</kbd> 開始／停止　<kbd>N</kbd> 次の区間　<kbd>F</kbd> 大画面　<kbd>M</kbd> 小窓　<kbd>＋</kbd><kbd>−</kbd> サイズ</p>",
 "    </aside>",
 "  </section>",
@@ -801,7 +959,8 @@ const HTML_LINES = [
 "  google.script.run.withSuccessHandler(txt=>{",
 "    let rm=null;try{rm=txt?JSON.parse(txt):null}catch(e){}",
 "    const first=!pulled;pulled=true;",
-"    if(first)google.script.run.withSuccessHandler(u=>{if(u){$('#recLink').href=u;$('#recBox').hidden=false;}}).getRecordUrl();",
+"    if(first){google.script.run.withSuccessHandler(u=>{if(u){$('#recLink').href=u;$('#recBox').hidden=false;}}).getRecordUrl();",
+"      google.script.run.withSuccessHandler(w=>{if(w&&w.owner)$('#rosterBtn').hidden=false;}).whoAmI();}",
 "    if(rm&&Array.isArray(rm.sessions)&&rm.sessions.length&&(rm.savedAt||0)>(S.savedAt||0)){",
 "      if(busyForSync())pending=rm;else applyRemote(rm);",
 "      setSync('ok');",
@@ -1523,6 +1682,31 @@ const HTML_LINES = [
 "$('#voiceBtn').onclick=openVoice;$('#vClose').onclick=closeVoice;",
 "$('#vModal').addEventListener('click',e=>{if(e.target.id==='vModal')closeVoice();});",
 "",
+"/* ---------- roster (GAS only, owner only) ---------- */",
+"let rArm=null;",
+"function rMsg(t){const m=$('#rMsg');m.hidden=!t;m.textContent=t||'';}",
+"function fmtD(iso){try{const d=new Date(iso);return `${d.getMonth()+1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`}catch(e){return ''}}",
+"function renderRoster(d){",
+"  const rows=[`<div class=\"vrow\"><div><div class=\"vt\"><span>${esc(d.owner)}</span></div><div class=\"vd\">管理者（あなた）</div></div><div class=\"vbtns\"><span class=\"rrole\">管理者</span></div></div>`]",
+"    .concat(d.roster.map(x=>`<div class=\"vrow\"><div><div class=\"vt\"><span>${esc(x.email)}</span></div><div class=\"vd\">${fmtD(x.addedAt)} に追加</div></div><div class=\"vbtns\"><button class=\"vb\" data-rm=\"${esc(x.email)}\">${rArm===x.email?'もう一度押すと外します':'名簿から外す'}</button></div></div>`));",
+"  $('#rList').innerHTML=rows.join('');",
+"  $('#rDenTitle').hidden=!d.denied.length;",
+"  $('#rDen').innerHTML=d.denied.map(x=>`<div class=\"vrow\"><div><div class=\"vt\"><span>${esc(x.email)}</span></div><div class=\"vd\">${fmtD(x.at)} に開こうとしました</div></div><div class=\"vbtns\">${/@/.test(x.email)?`<button class=\"vb\" data-add=\"${esc(x.email)}\">名簿に追加</button>`:''}</div></div>`).join('');",
+"}",
+"let rData=null;",
+"function rCall(fn,arg){",
+"  rMsg('');",
+"  google.script.run.withSuccessHandler(d=>{rData=d;renderRoster(d);}).withFailureHandler(e=>rMsg(String(e&&e.message||e).replace(/^Error:\\s*/,'')))[fn](arg);",
+"}",
+"$('#rosterBtn').onclick=()=>{$('#rModal').hidden=false;rArm=null;rCall('rosterList');setTimeout(()=>$('#rEmail').focus(),50);};",
+"$('#rClose').onclick=()=>{$('#rModal').hidden=true;};",
+"$('#rModal').addEventListener('click',e=>{if(e.target.id==='rModal')$('#rModal').hidden=true;});",
+"$('#rForm').addEventListener('submit',e=>{e.preventDefault();const v=$('#rEmail').value.trim();if(!v)return;$('#rEmail').value='';rCall('rosterAdd',v);});",
+"$('#rList').addEventListener('click',e=>{const b=e.target.closest('[data-rm]');if(!b)return;const em=b.dataset.rm;",
+"  if(rArm!==em){rArm=em;renderRoster(rData);clearTimeout(rArm._t);setTimeout(()=>{if(rArm===em){rArm=null;renderRoster(rData);}},3000);return;}",
+"  rArm=null;rCall('rosterRemove',em);});",
+"$('#rDen').addEventListener('click',e=>{const b=e.target.closest('[data-add]');if(b)rCall('rosterAdd',b.dataset.add);});",
+"",
 "/* ---------- mini window (Document Picture-in-Picture, or compact page) ---------- */",
 "const ICON_SKIP='<svg viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M5 5.5v13l9-6.5z\"/><rect x=\"16\" y=\"5.5\" width=\"3\" height=\"13\" rx=\"1\"/></svg>';",
 "const ICON_LAP='<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M6 21V4\"/><path d=\"M6 4h11l-2.5 4L17 12H6\"/></svg>';",
@@ -1628,7 +1812,7 @@ const HTML_LINES = [
 "document.addEventListener('keydown',e=>{",
 "  const tag=document.activeElement.tagName;",
 "  if(/INPUT|TEXTAREA/.test(tag)||e.ctrlKey||e.metaKey||e.altKey)return;",
-"  if(!$('#vModal').hidden&&e.key!=='Escape')return;",
+"  if((!$('#vModal').hidden||!$('#rModal').hidden)&&e.key!=='Escape')return;",
 "  if(e.code==='Space'){",
 "    if(tag==='BUTTON')return;",
 "    e.preventDefault();",
@@ -1641,6 +1825,7 @@ const HTML_LINES = [
 "  else if((e.key==='l'||e.key==='L')&&tab==='sw'){$('#sLap').click();}",
 "  else if(e.key==='m'||e.key==='M'){openMini();}",
 "  else if(e.key==='Escape'&&!$('#vModal').hidden)closeVoice();",
+"  else if(e.key==='Escape'&&!$('#rModal').hidden)$('#rModal').hidden=true;",
 "  else if(e.key==='Escape'&&MINI&&MINI.kind==='inline')closeMini();",
 "  else if(e.key==='Escape'&&app.classList.contains('stage'))setStage(false);",
 "});",
