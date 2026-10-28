@@ -105,7 +105,6 @@ button.tool:hover{color:var(--ink);border-color:var(--ink-3)}
 .hand{stroke:var(--ink);stroke-width:2.6;stroke-linecap:round;transition:opacity .3s}
 .knob{stroke:var(--hub);stroke-width:3}
 .fillp{transition:fill .5s}
-.dial.warn .fillp{animation:breathe 1.6s ease-in-out infinite}
 @keyframes breathe{50%{opacity:.55}}
 .dial.done .hand,.dial.done .knob,.dial.idle0 .hand{opacity:0}
 .face{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:1.4cqw;padding:24%}
@@ -402,6 +401,113 @@ body.compact #miniHost{display:block}
   .tool input[type=range]{width:60px}
 }
 @media (max-width:420px){.brand .bt{display:none}}
+/* ===== motion (picked from the motion-prompt gallery; numbers = gallery ids) ===== */
+:root{--e-out:cubic-bezier(.22,1,.36,1);--e-spring:cubic-bezier(.34,1.56,.64,1);--e-in:cubic-bezier(.55,0,1,.45)}
+/* #057 tabs, #060 segmented control: one indicator slides to the chosen item (#010 overshoot) */
+.modes,.dirsw{position:relative;isolation:isolate}
+.seg-ind{position:absolute;z-index:-1;top:0;left:0;width:0;height:0;border-radius:999px;pointer-events:none;opacity:0;transition:transform .45s var(--e-spring),width .45s var(--e-spring),height .3s var(--e-out),opacity .2s}
+.seg-ind.on{opacity:1}
+.seg-ind.jump{transition:none}
+.modes .seg-ind{background:var(--card);box-shadow:var(--lift)}
+.dirsw .seg-ind{background:var(--ink)}
+.modes.has-ind button[aria-selected="true"]{background:none;box-shadow:none}
+.dirsw.has-ind button[aria-selected="true"]{background:none}
+.modes button,.dirsw button{transition:color .3s var(--e-out)}
+/* #059 toggle switch: the knob stretches while pressed, then springs */
+.switch::after{transition:transform .5s var(--e-spring),width .18s var(--e-out)}
+.switch:active::after{width:26px}
+.switch[aria-checked="true"]:active::after{transform:translateX(12px)}
+/* #062 range slider */
+.tool input[type=range]{-webkit-appearance:none;appearance:none;height:6px;border-radius:3px;background:linear-gradient(var(--ink),var(--ink)) 0/var(--p,50%) 100% no-repeat,var(--wash);cursor:pointer}
+.tool input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--card);border:2.5px solid var(--ink);transition:transform .3s var(--e-spring)}
+.tool input[type=range]:active::-webkit-slider-thumb{transform:scale(1.35)}
+.tool input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:var(--card);border:2.5px solid var(--ink);transition:transform .3s var(--e-spring)}
+.tool input[type=range]:active::-moz-range-thumb{transform:scale(1.35)}
+/* #063 stepper: the zoom value rolls */
+.zoom output{display:inline-block}
+.zoom output.roll-up{animation:rollUp .32s var(--e-out)}
+.zoom output.roll-dn{animation:rollDn .32s var(--e-out)}
+@keyframes rollUp{from{transform:translateY(70%);opacity:0}}
+@keyframes rollDn{from{transform:translateY(-70%);opacity:0}}
+/* #085 ripple */
+.rip-host{position:relative;overflow:hidden}
+.rip{position:absolute;border-radius:50%;pointer-events:none;background:currentColor;opacity:.2;transform:scale(0);animation:rip .6s var(--e-out) forwards}
+@keyframes rip{to{transform:scale(1);opacity:0}}
+/* #011 squash & stretch on the main button */
+.cb .cbi{transition:transform .55s var(--e-spring),background .2s}
+.cb.main:active .cbi{transform:scale(1.08,.9);transition-duration:.12s}
+/* #081 hover lift */
+.sess{transition:border-color .2s,background .2s,transform .35s var(--e-spring),box-shadow .35s var(--e-out)}
+.qb{transition:transform .35s var(--e-spring),border-color .2s,color .2s}
+@media (hover:hover){.sess:hover,.qb:not(:disabled):hover{transform:translateY(-2px);box-shadow:var(--lift)}}
+/* #054 tooltip */
+#tip{position:fixed;z-index:80;left:0;top:0;pointer-events:none;background:var(--ink);color:var(--paper);font-size:.78rem;font-weight:700;padding:.35em .75em;border-radius:8px;white-space:nowrap;opacity:0;transform:translateY(-4px);transition:opacity .15s,transform .25s var(--e-out)}
+#tip.on{opacity:1;transform:none}
+/* #049 modal, #051 bottom sheet on phones */
+.vmodal{background:rgba(10,12,15,0);transition:background .28s var(--e-out)}
+.vmodal.open{background:rgba(10,12,15,.45)}
+.vbox{opacity:0;transform:translateY(14px) scale(.96);transition:transform .5s var(--e-spring),opacity .22s var(--e-out)}
+.vmodal.open .vbox{opacity:1;transform:none}
+@media (max-width:640px){
+  .vmodal{place-items:end center;padding:0}
+  .vbox{width:100%;border-radius:22px 22px 0 0;max-height:88svh;padding-bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateY(100%);opacity:1;transition:transform .45s var(--e-out)}
+  .vbox::before{content:"";display:block;width:40px;height:5px;border-radius:3px;background:var(--rule);margin:-8px auto 14px}
+}
+/* #056 toast + #001 pop-in */
+#toasts{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:70;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;max-width:calc(100vw - 32px)}
+.toast{background:var(--ink);color:var(--paper);border-radius:999px;padding:.6em 1.25em;font-weight:700;font-size:.9rem;box-shadow:0 12px 30px -10px rgba(0,0,0,.45);animation:toastIn .5s var(--e-spring);text-align:center}
+.toast.out{animation:toastOut .28s var(--e-in) forwards}
+@keyframes toastIn{from{opacity:0;transform:translateY(18px) scale(.9)}}
+@keyframes toastOut{to{opacity:0;transform:translateY(10px) scale(.96)}}
+.pop-in{animation:popIn .5s var(--e-spring)}
+@keyframes popIn{from{opacity:0;transform:scale(.92) translateY(6px)}}
+.pop-out{animation:popOut .22s var(--e-in) forwards;pointer-events:none}
+@keyframes popOut{to{opacity:0;transform:scale(.94)}}
+/* #002 stagger + #004 line draw (when a session opens or the big screen starts) */
+.prog.intro li{animation:stagIn .55s var(--e-out) both;animation-delay:calc(var(--i) * 55ms)}
+.tl.intro .tl-s,.sess-list.intro .sess{animation:stagUp .5s var(--e-out) both;animation-delay:calc(var(--i) * 50ms)}
+@keyframes stagIn{from{opacity:0;transform:translateX(20px)}}
+@keyframes stagUp{from{opacity:0;transform:translateY(10px)}}
+.ringbg.draw{stroke-dasharray:1;stroke-dashoffset:1;animation:draw .9s var(--e-out) forwards;animation-delay:calc(var(--i) * 70ms)}
+@keyframes draw{to{stroke-dashoffset:0}}
+/* #080 highlighter on a new instruction */
+.mk{background:linear-gradient(transparent 60%,color-mix(in srgb,var(--c,var(--ink-3)) 30%,transparent) 0) no-repeat 0 0/100% 100%;-webkit-box-decoration-break:clone;box-decoration-break:clone;animation:mark .9s var(--e-out) .15s backwards}
+@keyframes mark{from{background-size:0% 100%}}
+/* #156 text roll: the segment name slides in when it changes */
+.f-lbl span{display:inline-block;animation:rollUp .45s var(--e-out)}
+/* #125 pulse in the last minute (calm ring instead of flicker) */
+.dial::after{content:"";position:absolute;inset:10%;border-radius:50%;pointer-events:none;opacity:0}
+.dial.warn::after{opacity:1;animation:pulse 1.8s var(--e-out) infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--warn) 55%,transparent)}100%{box-shadow:0 0 0 4.5cqw color-mix(in srgb,var(--warn) 0%,transparent)}}
+.f-pill.warnp{animation:pillPulse 1.8s ease-in-out infinite}
+@keyframes pillPulse{50%{transform:scale(1.07)}}
+/* #123 bounce: the 「つぎ」 badge */
+.prog li.next .pt::after{display:inline-block;animation:bounceIn .65s var(--e-spring) .15s backwards}
+@keyframes bounceIn{from{transform:scale(.3);opacity:0}}
+/* #068 step indicator: the current segment's ring closes in */
+.tl-b{outline:2px solid transparent;outline-offset:7px;transition:outline-offset .4s var(--e-spring),outline-color .3s}
+/* #070 spinner + #071 badge on sync */
+.sync .spin{display:none;width:12px;height:12px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:spin .8s linear infinite}
+.sync[data-st="saving"] .spin,.sync[data-st="load"] .spin{display:inline-block}
+.sync[data-st="saving"] svg,.sync[data-st="load"] svg{display:none}
+.sync[data-st="ok"] svg{animation:popIn .45s var(--e-spring)}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* #072 empty state */
+.empty-st{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:16px 8px;color:var(--ink-3);font-size:.85rem;animation:popIn .5s var(--e-spring)}
+.empty-st svg{width:56px;height:56px;margin-bottom:4px}
+.empty-st b{color:var(--ink-2);font-size:.95rem}
+.empty-st .qb{margin-top:6px;border-style:solid}
+/* #159 inline validation */
+.num.bad,.in.bad{border-color:var(--c0)}
+.rows>.row .err{grid-column:2 / -1;margin:-2px 0 0;font-size:.75rem;font-weight:700;color:var(--c0);animation:errIn .3s var(--e-out)}
+@keyframes errIn{from{opacity:0;transform:translateY(-4px)}}
+.rhint{margin:6px 0 0;font-size:.78rem;font-weight:700;min-height:1.2em}
+.rhint.ok{color:var(--c2)}.rhint.ng{color:var(--c0)}
+/* #160 loading button */
+.vb.loading{color:transparent!important;position:relative;pointer-events:none}
+.vb.loading::after{content:"";position:absolute;inset:0;margin:auto;width:14px;height:14px;border-radius:50%;border:2px solid var(--paper);border-right-color:transparent;animation:spin .8s linear infinite}
+/* #161 view transitions (tab switch, big screen) */
+::view-transition-old(root),::view-transition-new(root){animation-duration:.3s;animation-timing-function:var(--e-out)}
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 
@@ -409,6 +515,8 @@ body.compact #miniHost{display:block}
 <body>
 <canvas id="confetti" hidden></canvas>
 <div id="miniHost"></div>
+<div id="toasts" aria-live="polite"></div>
+<div id="tip" role="tooltip"></div>
 <div class="vmodal" id="vModal" hidden>
   <div class="vbox" role="dialog" aria-modal="true" aria-labelledby="vTitle">
     <div class="vh"><h2 id="vTitle">わたしの声</h2><button class="x" id="vClose" aria-label="閉じる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
@@ -427,7 +535,8 @@ body.compact #miniHost{display:block}
     <div class="vh"><h2 id="rTitle">名簿（使える人）</h2><button class="x" id="rClose" aria-label="閉じる"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
     <p class="vlead">このアプリを使えるのは、管理者と、ここに入っている人だけです。入っていない人が開いても「許可がありません」と出るだけで、データは見えません。使う人のデータは、それぞれの人のアカウントに別々に保存されます。</p>
     <p class="vmsg" id="rMsg" hidden></p>
-    <form class="radd" id="rForm"><input class="in" id="rEmail" type="email" inputmode="email" autocomplete="off" placeholder="例：tanaka@sakado.ed.jp" aria-label="追加するメールアドレス"><button class="vb radd-go" type="submit">追加</button></form>
+    <form class="radd" id="rForm" novalidate><input class="in" id="rEmail" type="email" inputmode="email" autocomplete="off" placeholder="例：tanaka@sakado.ed.jp" aria-label="追加するメールアドレス"><button class="vb radd-go" type="submit">追加</button></form>
+    <p class="rhint" id="rHint"></p>
     <h3 class="vsec">使える人</h3>
     <div class="vlist" id="rList"><div class="empty">読み込み中…</div></div>
     <h3 class="vsec" id="rDenTitle" hidden>許可なく開こうとした人（最新30件）</h3>
@@ -448,15 +557,15 @@ body.compact #miniHost{display:block}
     </nav>
     <div class="tools">
       <label class="tool opt" title="音量"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg><input type="range" id="volR" min="0" max="100" step="5" value="50" aria-label="音量"></label>
-      <button class="tool opt" id="voiceBtn" title="先生の声を録音する"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg><span class="lbl-t">わたしの声</span></button>
-      <button class="tool opt" id="voiceSw" aria-pressed="true" title="読み上げ・声のオン／オフ" aria-label="読み上げ・声のオン／オフ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/><path d="M8.5 10.5h7"/></svg></button>
+      <button class="tool opt" id="voiceBtn" data-tip="先生の声を録音する"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg><span class="lbl-t">わたしの声</span></button>
+      <button class="tool opt" id="voiceSw" aria-pressed="true" data-tip="読み上げ・声のオン／オフ" aria-label="読み上げ・声のオン／オフ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/><path d="M8.5 10.5h7"/></svg></button>
       <div class="tool zoom" aria-label="表示サイズ">
-        <button id="zOut" aria-label="小さくする">−</button>
+        <button id="zOut" aria-label="小さくする" data-tip="小さくする（−）">−</button>
         <output id="zVal">100%</output>
-        <button id="zIn" aria-label="大きくする">＋</button>
+        <button id="zIn" aria-label="大きくする" data-tip="大きくする（＋）">＋</button>
       </div>
-      <button class="tool" id="miniBtn" title="小窓で表示（授業中に画面の端に出しておけます）"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="15" rx="2"/><rect x="12" y="11.5" width="7" height="6" rx="1" fill="currentColor"/></svg><span class="lbl-t">小窓</span></button>
-      <button class="tool stage-btn" id="stageBtn" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span id="stageLbl">大画面</span></button>
+      <button class="tool" id="miniBtn" data-tip="小窓で表示（M）"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="15" rx="2"/><rect x="12" y="11.5" width="7" height="6" rx="1" fill="currentColor"/></svg><span class="lbl-t">小窓</span></button>
+      <button class="tool stage-btn" id="stageBtn" aria-pressed="false" data-tip="大画面（F）"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span id="stageLbl">大画面</span></button>
     </div>
   </header>
 
@@ -488,9 +597,9 @@ body.compact #miniHost{display:block}
         <div>終了予定<b id="tEnd">--:--</b></div>
       </div>
       <div class="ctrls">
-        <button class="cb" id="tReset"><span class="cbi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4.5h4.5"/></svg></span>リセット</button>
+        <button class="cb" id="tReset" data-tip="最初に戻す"><span class="cbi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4.5h4.5"/></svg></span>リセット</button>
         <button class="cb main" id="tStart"><span class="cbi" id="tStartI"></span><span id="tStartT">開始</span></button>
-        <button class="cb" id="tSkip"><span class="cbi"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 5.5v13l9-6.5z"/><rect x="16" y="5.5" width="3" height="13" rx="1"/></svg></span>次の区間</button>
+        <button class="cb" id="tSkip" data-tip="次の区間へ（N）"><span class="cbi"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 5.5v13l9-6.5z"/><rect x="16" y="5.5" width="3" height="13" rx="1"/></svg></span>次の区間</button>
       </div>
       <div class="dirsw st-only" role="group" aria-label="表示">
         <button data-dir="down" aria-selected="true">カウントダウン</button>
@@ -507,7 +616,7 @@ body.compact #miniHost{display:block}
         </div>
       </div>
       <div class="hr"></div>
-      <div class="sh"><h2>セッション</h2><span class="sync" id="syncChip" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18.5h10a4 4 0 0 0 .6-7.95A6 6 0 0 0 6.1 9.6 4.5 4.5 0 0 0 7 18.5z"/></svg><span>同期</span></span><button class="chipbtn" id="addSess" style="margin-left:auto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>新規</button></div>
+      <div class="sh"><h2>セッション</h2><span class="sync" id="syncChip" hidden><span class="spin"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18.5h10a4 4 0 0 0 .6-7.95A6 6 0 0 0 6.1 9.6 4.5 4.5 0 0 0 7 18.5z"/></svg><span>同期</span></span><button class="chipbtn" id="addSess" style="margin-left:auto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>新規</button></div>
       <div class="sess-list" id="sessList"></div>
       <div class="hr"></div>
       <div class="fld"><label for="sessTitle">題名</label><input class="in title" id="sessTitle" maxlength="40" placeholder="例：朝の集中タイム"></div>
@@ -552,7 +661,7 @@ body.compact #miniHost{display:block}
       <div class="ctrls">
         <button class="cb" id="sReset"><span class="cbi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4.5h4.5"/></svg></span>リセット</button>
         <button class="cb main" id="sStart"><span class="cbi" id="sStartI"></span><span id="sStartT">開始</span></button>
-        <button class="cb" id="sLap"><span class="cbi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21V4"/><path d="M6 4h11l-2.5 4L17 12H6"/></svg></span>ラップ</button>
+        <button class="cb" id="sLap" data-tip="ラップを記録（L）"><span class="cbi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21V4"/><path d="M6 4h11l-2.5 4L17 12H6"/></svg></span>ラップ</button>
       </div>
       </div>
     </div>
@@ -637,6 +746,7 @@ const syncPart=()=>({sessions:S.sessions,currentId:S.currentId,tDir:S.tDir,alarm
 const syncSig=()=>JSON.stringify(syncPart());
 let lastSig=null,pulled=false,pushT=null,pending=null,syncState='';
 function setSync(st){
+  if(st==='err'&&syncState!=='err'&&GAS)setTimeout(()=>toast('Googleに保存できませんでした。つながったら自動で保存します'),0);
   syncState=st;const c=document.getElementById('syncChip');if(!c)return;
   c.hidden=!GAS;c.dataset.st=st;
   c.lastChild.textContent={ok:'同期済み',saving:'保存中…',load:'読み込み中…',err:'オフライン'}[st]||'';
@@ -663,7 +773,7 @@ function applyRemote(rm){
   S.savedAt=rm.savedAt;lastSig=syncSig();
   try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
   for(const k in BUILTIN){if(VOICES[k]===BUILTIN[k])delete VOICES[k];}applyBuiltins();
-  if(prevCur!==S.currentId||!R.done&&R.segIdx>=(cur().segs.length||1))resetRun();
+  if(prevCur!==S.currentId||!R.done&&R.segIdx>=(cur().segs.length||1)){resetRun();introNext=true;}
   setTDir(S.tDir==='up'?'up':'down');paintVoice();renderAlarms();structT();
 }
 function pull(){
@@ -812,10 +922,73 @@ function showTab(t){
   [['timer','#tabTimer','#viewTimer'],['sw','#tabSw','#viewSw'],['al','#tabAl','#viewAl']].forEach(([k,b,v])=>{
     $(b).setAttribute('aria-selected',k===t);$(v).hidden=k!==t;});
   try{localStorage.setItem(KEY+'-tab',t)}catch(e){}
+  requestAnimationFrame(syncInds);
 }
-$('#tabTimer').onclick=()=>showTab('timer');
-$('#tabSw').onclick=()=>showTab('sw');
-$('#tabAl').onclick=()=>showTab('al');
+/* ---------- motion helpers ---------- */
+const RM=matchMedia('(prefers-reduced-motion: reduce)');
+function vt(fn){if(document.startViewTransition&&!RM.matches&&!document.hidden){try{document.startViewTransition(fn);return;}catch(e){}}fn();}
+function segInd(c){
+  if(!c.offsetWidth)return;
+  let ind=c.querySelector(':scope>.seg-ind');
+  if(!ind){ind=document.createElement('span');ind.className='seg-ind jump';c.prepend(ind);}
+  const sel=c.querySelector(':scope>[aria-selected="true"]');if(!sel)return;
+  ind.style.width=sel.offsetWidth+'px';ind.style.height=sel.offsetHeight+'px';
+  ind.style.transform=`translate(${sel.offsetLeft}px,${sel.offsetTop}px)`;
+  c.classList.add('has-ind');
+  if(!ind.classList.contains('on')){ind.classList.add('on');requestAnimationFrame(()=>ind.classList.remove('jump'));}
+}
+function syncInds(){document.querySelectorAll('.modes,.dirsw').forEach(segInd);}
+addEventListener('resize',syncInds);
+if('ResizeObserver' in window){const ro=new ResizeObserver(syncInds);document.querySelectorAll('.modes,.dirsw').forEach(c=>ro.observe(c));}
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(syncInds);
+// #085 ripple
+const RIP='.cb,.chipbtn,.qb,.vb,.tool,.zoom button,.modes button,.danger,.sess,.copy';
+document.addEventListener('pointerdown',e=>{
+  if(RM.matches)return;
+  const b=e.target.closest(RIP);if(!b||b.disabled||b.classList.contains('zoom'))return;
+  const host=b.classList.contains('cb')?b.querySelector('.cbi'):b;if(!host)return;
+  host.classList.add('rip-host');
+  const rc=host.getBoundingClientRect(),k=rc.width/host.offsetWidth||1,sz=Math.max(host.offsetWidth,host.offsetHeight)*2.2;
+  const sp=document.createElement('span');sp.className='rip';sp.style.width=sp.style.height=sz+'px';
+  sp.style.left=((e.clientX-rc.left)/k-sz/2)+'px';sp.style.top=((e.clientY-rc.top)/k-sz/2)+'px';
+  host.appendChild(sp);setTimeout(()=>sp.remove(),650);
+},{passive:true});
+// #054 tooltip (mouse / keyboard only)
+const tipEl=$('#tip');let tipFor=null;
+function showTip(el,text){
+  tipEl.textContent=text||el.dataset.tip;tipFor=el;
+  const rc=el.getBoundingClientRect(),tw=tipEl.offsetWidth,th=tipEl.offsetHeight;
+  let x=rc.left+rc.width/2-tw/2;x=Math.max(8,Math.min(innerWidth-tw-8,x));
+  let y=rc.bottom+8;if(y+th>innerHeight-8)y=rc.top-th-8;
+  tipEl.style.left=x+'px';tipEl.style.top=y+'px';tipEl.classList.add('on');
+}
+function hideTip(){tipEl.classList.remove('on');tipFor=null;}
+document.addEventListener('pointerover',e=>{if(e.pointerType==='touch')return;const el=e.target.closest('[data-tip]');if(el&&el!==tipFor)showTip(el);else if(!el&&tipFor)hideTip();});
+document.addEventListener('focusin',e=>{const el=e.target.closest&&e.target.closest('[data-tip]');if(el&&el.matches(':focus-visible'))showTip(el);});
+document.addEventListener('focusout',hideTip);document.addEventListener('pointerdown',hideTip);
+// #056 toast
+function toast(msg){
+  const t=document.createElement('div');t.className='toast';t.textContent=msg;$('#toasts').appendChild(t);
+  while($('#toasts').children.length>3)$('#toasts').firstChild.remove();
+  setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),300);},2600);
+}
+// #049 modal / #051 bottom sheet
+function openModal(m){m.hidden=false;requestAnimationFrame(()=>requestAnimationFrame(()=>m.classList.add('open')));}
+function closeModal(m){m.classList.remove('open');setTimeout(()=>{if(!m.classList.contains('open'))m.hidden=true;},RM.matches?0:300);}
+// #007 count-up
+function countUp(el,sec){
+  if(RM.matches){el.textContent=fmt(sec*1000);return;}
+  const t0=performance.now(),d=650;
+  (function f(t){const k=Math.min(1,(t-t0)/d),e=1-Math.pow(1-k,3);el.textContent=fmt(Math.round(sec*e)*1000);if(k<1)requestAnimationFrame(f);})(t0);
+}
+// #001 pop-in for rows that were not there before
+const seen={};
+function popNew(key,els){const prev=seen[key];const now=new Set();els.forEach(el=>{const id=el.dataset.id;now.add(id);if(prev&&!prev.has(id))el.classList.add('pop-in');});seen[key]=now;}
+let introNext=true;
+
+$('#tabTimer').onclick=()=>vt(()=>{showTab('timer');syncInds();});
+$('#tabSw').onclick=()=>vt(()=>{showTab('sw');syncInds();});
+$('#tabAl').onclick=()=>vt(()=>{showTab('al');syncInds();});
 
 /* ---------- top tools ---------- */
 const voiceSw=$('#voiceSw');
@@ -823,8 +996,9 @@ function paintVoice(){voiceSw.setAttribute('aria-pressed',S.voice)}
 voiceSw.onclick=()=>{S.voice=!S.voice;save();paintVoice();if(!S.voice)try{speechSynthesis.cancel()}catch(e){}};
 paintVoice();
 $('#volR').value=Math.round(S.vol*100);
-$('#volR').addEventListener('input',e=>{S.vol=e.target.value/100;save();});
-$('#volR').addEventListener('change',()=>{ensureAudio();chime([E5,C5],0.45);});
+const paintVol=()=>$('#volR').style.setProperty('--p',$('#volR').value+'%');paintVol();
+$('#volR').addEventListener('input',e=>{S.vol=e.target.value/100;save();paintVol();showTip(e.target,'音量 '+e.target.value+'%');});
+$('#volR').addEventListener('change',()=>{ensureAudio();chime([E5,C5],0.45);setTimeout(hideTip,700);});
 const Z_MIN=0.6,Z_MAX=2.5;
 function applyZoom(){
   S.zoom=Math.round(clamp(S.zoom,Z_MIN,Z_MAX)*10)/10;
@@ -832,13 +1006,20 @@ function applyZoom(){
   $('#zVal').textContent=Math.round(S.zoom*100)+'%';
   $('#zOut').disabled=S.zoom<=Z_MIN;$('#zIn').disabled=S.zoom>=Z_MAX;save();
 }
-$('#zIn').onclick=()=>{S.zoom+=0.1;applyZoom();};
-$('#zOut').onclick=()=>{S.zoom-=0.1;applyZoom();};
+function rollZ(c){const o=$('#zVal');o.classList.remove('roll-up','roll-dn');void o.offsetWidth;o.classList.add(c);}
+$('#zIn').onclick=()=>{S.zoom+=0.1;applyZoom();rollZ('roll-up');syncInds();};
+$('#zOut').onclick=()=>{S.zoom-=0.1;applyZoom();rollZ('roll-dn');syncInds();};
 const app=$('#app');
 function setStage(on){
-  app.classList.toggle('stage',on);
-  $('#stageBtn').setAttribute('aria-pressed',on);
-  $('#stageLbl').textContent=on?'通常表示':'大画面';
+  vt(()=>{
+    app.classList.toggle('stage',on);
+    $('#stageBtn').setAttribute('aria-pressed',on);
+    $('#stageLbl').textContent=on?'通常表示':'大画面';
+    $('#stageBtn').dataset.tip=on?'通常表示にもどす（Esc）':'大画面（F）';
+    if(on&&tab==='timer'){introNext=true;structT();}
+    if(on)window.scrollTo(0,0);
+    hideTip();syncInds();
+  });
   try{
     if(on&&!document.fullscreenElement&&document.documentElement.requestFullscreen)document.documentElement.requestFullscreen().catch(()=>{});
     if(!on&&document.fullscreenElement)document.exitFullscreen().catch(()=>{});
@@ -856,7 +1037,7 @@ const running=()=>R.startedAt!==null;
 const segElapsed=()=>R.acc+(running()?Date.now()-R.startedAt:0);
 function resetRun(){R.segIdx=0;R.acc=0;R.startedAt=null;R.warned=false;R.done=false;keepAwake(false);}
 
-function setTDir(d){S.tDir=d;save();document.querySelectorAll('[data-dir]').forEach(b=>b.setAttribute('aria-selected',b.dataset.dir===d));}
+function setTDir(d){S.tDir=d;save();document.querySelectorAll('[data-dir]').forEach(b=>b.setAttribute('aria-selected',b.dataset.dir===d));syncInds();}
 document.querySelectorAll('[data-dir]').forEach(b=>b.onclick=()=>setTDir(b.dataset.dir));
 $('#tDial .face').onclick=()=>setTDir(S.tDir==='down'?'up':'down');
 
@@ -902,24 +1083,27 @@ function timerTick(){
 let tlEls=[];
 function buildRingAndLine(){
   const s=cur(),segs=s?s.segs:[];
+  const intro=introNext&&!RM.matches;introNext=false;
   TD.ring.innerHTML='';TD.ringFg=[];
   const tot=segs.reduce((a,g)=>a+g.sec,0);
   let acc=0;
   segs.forEach((g,k)=>{
     const a0=acc/tot,a1=(acc+g.sec)/tot,gap=Math.min(0.006,(a1-a0)/4);
-    el('path',{class:'ringbg',d:arc(R_RING,a0+gap,a1-gap),style:`stroke:${col(k)}`},TD.ring);
+    const bg=el('path',{class:'ringbg',d:arc(R_RING,a0+gap,a1-gap),style:`stroke:${col(k)};--i:${k}`},TD.ring);
+    if(intro){bg.setAttribute('pathLength','1');bg.classList.add('draw');}
     TD.ringFg.push({p:el('path',{class:'ringfg',style:`stroke:${col(k)}`},TD.ring),a0,a1,gap});
     acc+=g.sec;
   });
   const tl=$('#tLine');
-  tl.innerHTML=segs.map((g,k)=>`<div class="tl-s" style="--c:${col(k)};flex-grow:${g.sec}" title="${esc(segName(g,k))} ${shortDur(g.sec)}"><div class="tl-b"><i></i></div><div class="tl-t"><b>${esc(segName(g,k))}</b>${shortDur(g.sec)}</div></div>`).join('');
+  tl.innerHTML=segs.map((g,k)=>`<div class="tl-s" style="--c:${col(k)};--i:${k};flex-grow:${g.sec}" title="${esc(segName(g,k))} ${shortDur(g.sec)}"><div class="tl-b"><i></i></div><div class="tl-t"><b>${esc(segName(g,k))}</b>${shortDur(g.sec)}</div></div>`).join('');
   tlEls=[...tl.children];
   tl.hidden=!segs.length;
   requestAnimationFrame(markTiny);
   const pg=$('#tProg');
-  pg.innerHTML=segs.map((g,k)=>`<li style="--c:${col(k)}"><span class="pn">${k+1}</span><span class="pt">${esc(segName(g,k))}</span><span class="pr"></span><span class="pd">${shortDur(g.sec)}</span><i class="pb"><b></b></i></li>`).join('');
+  pg.innerHTML=segs.map((g,k)=>`<li style="--c:${col(k)};--i:${k}"><span class="pn">${k+1}</span><span class="pt">${esc(segName(g,k))}</span><span class="pr"></span><span class="pd">${shortDur(g.sec)}</span><i class="pb"><b></b></i></li>`).join('');
   pg.classList.toggle('many',segs.length>5);
   pgEls=[...pg.children];
+  if(intro){[pg,tl].forEach(x=>{x.classList.remove('intro');void x.offsetWidth;x.classList.add('intro');});clearTimeout(buildRingAndLine._t);buildRingAndLine._t=setTimeout(()=>{pg.classList.remove('intro');tl.classList.remove('intro');},1400);countUp($('#sessTotal'),tot);}
 }
 let pgEls=[];
 function structT(){
@@ -962,7 +1146,7 @@ function renderTimer(){
   const big=R.done?'おわり':(S.tDir==='down'?fmt(left,true):fmt(e));
   setT($('#tBig'),big);$('#tBig').classList.toggle('long',big.length>5);
   setT($('#tSub'),R.done?`${segs.length}区間・${fmt(tot)}`:`${i+1} / ${segs.length}　${S.tDir==='down'?'全'+fmt(total):'目標 '+fmt(total)}`);
-  setH($('#tPill'),R.done?'<span class="f-pill ok">おつかれさま</span>':warn?'<span class="f-pill">あと1分</span>':(!running()&&(R.acc>0||R.segIdx>0)?'<span class="f-pill" style="background:var(--ink-3)">一時停止中</span>':''));
+  setH($('#tPill'),R.done?'<span class="f-pill ok">おつかれさま</span>':warn?'<span class="f-pill warnp">あと1分</span>':(!running()&&(R.acc>0||R.segIdx>0)?'<span class="f-pill" style="background:var(--ink-3)">一時停止中</span>':''));
   setStatus($('#tKick'),R.done?['完了','var(--done)','']:running()?['実行中',c,'run']:(R.acc>0||R.segIdx>0)?['一時停止中','var(--ink-3)','']:['待機中','var(--ink-3)','']);
   setT($('#tEl'),fmt(pos));setT($('#tRem'),fmt(tot-pos,true));
   if(R.done)setT($('#tEnd'),'--:--');
@@ -995,7 +1179,7 @@ function renderTimer(){
   if(!R.done&&nx)nn=`<span>つぎ ${hhmm(now+left)}〜</span><b>${esc(segName(nx,i+1))}</b>${noteOf(nx)?`<span>${esc(noteOf(nx))}</span>`:''}`;
   else if(!R.done)nn=`<span>${hhmm(now+left)} に終了予定</span>`;
   if(!R.done&&!noteOf(seg)&&!segs.some(g=>noteOf(g)))dim=false;
-  setT($('#tTodoK').lastChild,k);setT($('#tTodoT'),tt);setH($('#tTodoN'),nn);
+  setT($('#tTodoK').lastChild,k);setH($('#tTodoT'),`<span class="mk">${esc(tt)}</span>`);setH($('#tTodoN'),nn);
   if(todo.style.getPropertyValue('--c')!==cc)todo.style.setProperty('--c',cc);
   todo.classList.toggle('has',!!noteOf(seg)&&!R.done);
   $('#tTodoT').classList.toggle('dim',dim);
@@ -1009,11 +1193,13 @@ function sessCard(s){
       <span class="sess-m">${s.segs.map(g=>shortDur(g.sec)).join('・')||'区間なし'}</span>`;
 }
 function renderSide(){
-  $('#sessList').innerHTML=S.sessions.map(s=>`<button class="sess" data-id="${s.id}" aria-pressed="${s.id===S.currentId}">${sessCard(s)}</button>`).join('');
+  $('#sessList').innerHTML=S.sessions.map((s,i)=>`<button class="sess" data-id="${s.id}" style="--i:${i}" aria-pressed="${s.id===S.currentId}">${sessCard(s)}</button>`).join('');
+  popNew('sess',[...$('#sessList').children]);
+  if(!renderSide._done){renderSide._done=1;if(!RM.matches){const l=$('#sessList');l.classList.add('intro');setTimeout(()=>l.classList.remove('intro'),1200);}}
   const s=cur();
   const ti=$('#sessTitle'); if(document.activeElement!==ti)ti.value=s?s.title:'';
   const box=$('#rows');
-  if(!s||!s.segs.length){box.innerHTML='<div class="empty">まだ区間がありません。下のボタンで追加してください。</div>';}
+  if(!s||!s.segs.length){box.innerHTML=`<div class="empty-st"><svg viewBox="0 0 56 56" aria-hidden="true"><circle cx="28" cy="28" r="22" fill="none" stroke="var(--rule)" stroke-width="5"/><path d="M28 28 L28 6 A22 22 0 0 1 47 39 Z" fill="var(--wash)"/><circle cx="28" cy="28" r="12" fill="var(--card)"/><path d="M28 28v-8" stroke="var(--ink-3)" stroke-width="2.5" stroke-linecap="round"/></svg><b>まだ区間がありません</b><span>まずは区間を1つ追加しましょう。</span><button class="qb" data-quick="300">＋ 5分の区間を追加</button></div>`;seen.rows=new Set();}
   else{
     const active=document.activeElement&&box.contains(document.activeElement)?document.activeElement.id:null;
     box.innerHTML=s.segs.map((g,i)=>`
@@ -1024,7 +1210,9 @@ function renderSide(){
       <label class="unit"><input class="num" id="sc-${g.id}" data-f="sec" type="number" min="0" max="59" inputmode="numeric" value="${g.sec%60}" aria-label="秒">秒</label>
       <button class="x" data-del="${g.id}" aria-label="区間${i+1}を削除">${ICON_X}</button>
       <input class="in note" id="nt-${g.id}" data-f="note" value="${esc(g.note||'')}" maxlength="60" placeholder="指示（例：ノートにまとめる）" aria-label="区間${i+1}の指示">
+      <p class="err" hidden></p>
     </div>`).join('');
+    popNew('rows',[...box.children]);
     if(active){const a=document.getElementById(active);if(a)a.focus();}
   }
   $('#sessTotal').textContent=fmt((s?s.segs.reduce((a,g)=>a+g.sec,0):0)*1000);
@@ -1035,11 +1223,11 @@ function refreshCard(){
 }
 $('#sessList').addEventListener('click',e=>{
   const b=e.target.closest('.sess');if(!b||b.dataset.id===S.currentId)return;
-  S.currentId=b.dataset.id;save();resetRun();structT();
+  S.currentId=b.dataset.id;save();resetRun();introNext=true;structT();
 });
 $('#addSess').onclick=()=>{
   const n={id:uid(),title:'新しいセッション',segs:[{id:uid(),label:'',sec:300},{id:uid(),label:'',sec:300},{id:uid(),label:'',sec:600}]};
-  S.sessions.push(n);S.currentId=n.id;save();resetRun();structT();
+  S.sessions.push(n);S.currentId=n.id;save();resetRun();introNext=true;structT();toast('新しいセッションを作りました');
   const t=$('#sessTitle');t.focus();t.select();
 };
 $('#sessTitle').addEventListener('input',e=>{const s=cur();if(!s)return;s.title=e.target.value;save();refreshCard();});
@@ -1049,24 +1237,48 @@ $('#rows').addEventListener('input',e=>{
   if(e.target.dataset.f==='label'){g.label=e.target.value;}
   else if(e.target.dataset.f==='note'){g.note=e.target.value;save();return;}
   else{
-    const m=Math.max(0,parseInt(row.querySelector('[data-f=min]').value)||0);
-    const sc=clamp(parseInt(row.querySelector('[data-f=sec]').value)||0,0,59);
+    const mi=row.querySelector('[data-f=min]'),si=row.querySelector('[data-f=sec]');
+    const rm=parseInt(mi.value),rs=parseInt(si.value);
+    const m=Math.max(0,rm||0),sc=clamp(rs||0,0,59);
     g.sec=Math.max(1,m*60+sc);
+    let msg='';
+    if(rs>59){msg='秒は0〜59で入れてください（59秒として使います）';}
+    else if(rm<0||rs<0){msg='マイナスの数は入れられません';}
+    else if(m*60+sc===0){msg='0秒にはできません（1秒として使います）';}
+    else if(m>999){msg='999分までにしてください';}
+    si.classList.toggle('bad',rs>59||rs<0);mi.classList.toggle('bad',rm<0||m>999);
+    const er=row.querySelector('.err');if(er){er.hidden=!msg;er.textContent=msg;}
   }
   save();buildRingAndLine();refreshCard();
 });
+$('#rows').addEventListener('change',e=>{
+  const row=e.target.closest('.row');if(!row||!/min|sec/.test(e.target.dataset.f||''))return;
+  const g=cur().segs.find(x=>x.id===row.dataset.id);if(!g)return;
+  row.querySelector('[data-f=min]').value=Math.floor(g.sec/60);row.querySelector('[data-f=sec]').value=g.sec%60;
+  row.querySelectorAll('.bad').forEach(x=>x.classList.remove('bad'));const er=row.querySelector('.err');if(er)er.hidden=true;
+});
 $('#rows').addEventListener('click',e=>{
+  const q=e.target.closest('[data-quick]');
+  if(q){const s=cur();if(!s)return;s.segs.push({id:uid(),label:'',sec:+q.dataset.quick});save();structT();toast('5分の区間を追加しました');return;}
   const b=e.target.closest('[data-del]');if(!b)return;
-  const s=cur(),idx=s.segs.findIndex(x=>x.id===b.dataset.del);
+  const rowEl=b.closest('.row');if(rowEl.classList.contains('pop-out'))return;
+  rowEl.classList.add('pop-out');
+  setTimeout(()=>delSeg(b.dataset.del),RM.matches?0:200);
+});
+function delSeg(id){
+  const s=cur(),idx=s.segs.findIndex(x=>x.id===id);if(idx<0)return;
+  const nm=segName(s.segs[idx],idx);
   s.segs.splice(idx,1);
   if(idx<R.segIdx)R.segIdx--;else if(idx===R.segIdx){R.acc=0;R.warned=false;if(running())R.startedAt=Date.now();}
   if(R.segIdx>=s.segs.length)resetRun();
   save();structT();
-});
+  toast(`「${nm}」を削除しました`+(GAS?'（記録シートに残ります）':''));
+}
 document.querySelectorAll('#quickT [data-add]').forEach(b=>b.onclick=()=>{
   const s=cur();if(!s)return;s.segs.push({id:uid(),label:'',sec:+b.dataset.add});
   if(R.done){R.done=false;R.segIdx=s.segs.length-1;R.acc=0;R.warned=false;}
   save();structT();
+  toast(`${shortDur(+b.dataset.add)}の区間を追加しました`);
 });
 let armT=null;
 $('#delSess').onclick=e=>{
@@ -1075,7 +1287,8 @@ $('#delSess').onclick=e=>{
   clearTimeout(armT);b.classList.remove('arm');b.textContent='このセッションを削除';
   S.sessions=S.sessions.filter(s=>s.id!==S.currentId);
   if(!S.sessions.length)S.sessions.push({id:uid(),title:'新しいセッション',segs:[]});
-  S.currentId=S.sessions[0].id;save();resetRun();structT();
+  S.currentId=S.sessions[0].id;save();resetRun();introNext=true;structT();
+  toast('セッションを削除しました'+(GAS?'（記録シートに残ります）':''));
 };
 
 /* =========================================================
@@ -1089,7 +1302,7 @@ function fmtCs(ms){return fmt(ms)+'.'+p2(Math.floor(ms%1000/10));}
 function setSDir(d){
   if(wRun())return;
   W.dir=d;
-  $('#sUp').setAttribute('aria-selected',d==='up');$('#sDown').setAttribute('aria-selected',d==='down');
+  $('#sUp').setAttribute('aria-selected',d==='up');$('#sDown').setAttribute('aria-selected',d==='down');syncInds();
   $('#sSetBox').hidden=d!=='down';$('#sLapBox').hidden=d!=='up';$('#sLap').hidden=d!=='up';$('#sStats').hidden=d!=='up';
   setT($('#sTitle'),d==='up'?'カウントアップ':'カウントダウン');
   resetSw();
@@ -1124,7 +1337,7 @@ $('#sLap').onclick=()=>{if(!wRun())return;W.laps.push(wEl());renderLaps();};
 function renderLaps(){
   const box=$('#laps');
   setT($('#sLapN'),String(W.laps.length));
-  if(!W.laps.length){box.innerHTML='<div class="empty">計測中に「ラップ」を押すと、ここに記録されます。</div>';setT($('#sLapLast'),'--:--.--');return;}
+  if(!W.laps.length){box.innerHTML=`<div class="empty-st"><svg viewBox="0 0 56 56" aria-hidden="true"><path d="M17 48V10" stroke="var(--rule)" stroke-width="4" stroke-linecap="round"/><path d="M17 11h22l-5 8 5 8H17z" fill="var(--wash)" stroke="var(--rule)" stroke-width="3" stroke-linejoin="round"/></svg><b>ラップはまだありません</b><span>計測中に「ラップ」を押すと、ここに記録されます。</span></div>`;setT($('#sLapLast'),'--:--.--');return;}
   const ds=W.laps.map((t,i)=>t-(i?W.laps[i-1]:0));
   const mn=Math.min(...ds),mx=Math.max(...ds);
   let h='<div class="lr hd"><span>No.</span><span>ラップ</span><span>通算</span></div>';
@@ -1160,7 +1373,7 @@ function renderSw(){
     const big=W.done?'おわり':fmt(left,true);
     setT($('#sBig'),big);$('#sBig').classList.toggle('long',big.length>5);
     setT($('#sSub'),`設定 ${fmt(W.target)}`);
-    setH($('#sPill'),W.done?'<span class="f-pill ok">時間です</span>':warn?'<span class="f-pill">あと1分</span>':!wRun()&&e>0?'<span class="f-pill" style="background:var(--ink-3)">一時停止中</span>':'');
+    setH($('#sPill'),W.done?'<span class="f-pill ok">時間です</span>':warn?'<span class="f-pill warnp">あと1分</span>':!wRun()&&e>0?'<span class="f-pill" style="background:var(--ink-3)">一時停止中</span>':'');
   }
   if(d.classList.contains('pop'))cls+=' pop';
   if(d.className!==cls)d.className=cls;
@@ -1209,7 +1422,7 @@ function drawMarks(){
 }
 function renderAlarms(){
   const box=$('#aRows');
-  if(!S.alarms.length){box.innerHTML='<div class="empty">アラームがありません。「追加」から登録してください。</div>';drawMarks();return;}
+  if(!S.alarms.length){box.innerHTML=`<div class="empty-st"><svg viewBox="0 0 56 56" aria-hidden="true"><path d="M16 38V27a12 12 0 0 1 24 0v11l3 4H13z" fill="var(--wash)" stroke="var(--rule)" stroke-width="3" stroke-linejoin="round"/><path d="M24 46a4 4 0 0 0 8 0" fill="none" stroke="var(--ink-3)" stroke-width="3" stroke-linecap="round"/></svg><b>アラームがありません</b><span>授業の終わりや給食の時間などを登録できます。</span><button class="qb" data-aquick>＋ アラームを追加</button></div>`;seen.al=new Set();drawMarks();return;}
   box.innerHTML=S.alarms.map((a,i)=>`
     <div class="arow${a.on?'':' off'}" data-id="${a.id}" style="--c:${col(i)}">
       <input class="tm" type="time" id="at-${a.id}" data-f="time" value="${a.time}" aria-label="時刻">
@@ -1217,6 +1430,7 @@ function renderAlarms(){
       <button class="switch" role="switch" data-f="on" aria-checked="${a.on}" aria-label="オン／オフ"></button>
       <button class="x" data-adel="${a.id}" aria-label="削除">${ICON_X}</button>
     </div>`).join('');
+  popNew('al',[...box.children]);
   drawMarks();
 }
 $('#aRows').addEventListener('input',e=>{
@@ -1227,15 +1441,16 @@ $('#aRows').addEventListener('input',e=>{
   save();drawMarks();
 });
 $('#aRows').addEventListener('click',e=>{
+  if(e.target.closest('[data-aquick]')){$('#aAdd').click();return;}
   const row=e.target.closest('.arow');if(!row)return;
   const a=S.alarms.find(x=>x.id===row.dataset.id);
   if(e.target.closest('[data-f=on]')){ensureAudio();a.on=!a.on;save();renderAlarms();}
-  else if(e.target.closest('[data-adel]')){S.alarms=S.alarms.filter(x=>x.id!==a.id);save();renderAlarms();}
+  else if(e.target.closest('[data-adel]')){if(row.classList.contains('pop-out'))return;row.classList.add('pop-out');setTimeout(()=>{S.alarms=S.alarms.filter(x=>x.id!==a.id);save();renderAlarms();toast('アラームを削除しました'+(GAS?'（記録シートに残ります）':''));},RM.matches?0:200);}
 });
 $('#aAdd').onclick=()=>{
   const d=new Date(Date.now()+5*60000);
   const a={id:uid(),time:hm(d),title:'',on:true};
-  S.alarms.push(a);save();renderAlarms();ensureAudio();
+  S.alarms.push(a);save();renderAlarms();ensureAudio();toast(`${a.time} のアラームを追加しました`);
   const t=document.getElementById('an-'+a.id);if(t)t.focus();
 };
 function startRing(a){
@@ -1311,6 +1526,10 @@ function confetti(){
   (function step(t){
     const k=(t-t0)/1800;g.clearRect(0,0,innerWidth,innerHeight);
     if(k>=1){cv.hidden=true;return;}
+    const done=getComputedStyle(document.documentElement).getPropertyValue('--done').trim()||'#1f8f6a';
+    [0,.12,.24].forEach(dl=>{const q=Math.max(0,Math.min(1,(k-dl)/.55));if(q<=0||q>=1)return;
+      g.globalAlpha=(1-q)*.7;g.strokeStyle=done;g.lineWidth=10*(1-q)+1;g.beginPath();
+      g.arc(ox,oy,box.width*(.32+.26*(1-Math.pow(1-q,3))),0,Math.PI*2);g.stroke();});
     g.globalAlpha=Math.min(1,(1-k)*2.2);
     P.forEach(q=>{q.vy+=.22;q.vx*=.985;q.x+=q.vx;q.y+=q.vy;q.r+=q.vr;
       g.save();g.translate(q.x,q.y);g.rotate(q.r);g.fillStyle=q.c;g.fillRect(-q.w/2,-q.h/2,q.w,q.h*Math.abs(Math.cos(q.r*2)));g.restore();});
@@ -1350,7 +1569,7 @@ async function startRec(k){
   mr.onstop=async()=>{stream.getTracks().forEach(t=>t.stop());clearInterval(recTick);const key=rec.k;rec=null;
     const blob=new Blob(chunks,{type:mr.mimeType||'audio/webm'});
     if(blob.size<800){vMsg('うまく録音できませんでした。もう一度お試しください。');renderVoicePanel();return;}
-    await saveVoice(key,blob);playKey(key);};
+    await saveVoice(key,blob);playKey(key);toast('録音を保存しました');};
   try{speechSynthesis.cancel()}catch(e){}
   mr.start();rec={k,mr,t0:Date.now(),stopT:setTimeout(stopRec,15000)};
   recTick=setInterval(renderVoicePanel,250);renderVoicePanel();
@@ -1391,8 +1610,8 @@ function vClick(e){
   else if(a==='del')delVoice(k);
 }
 $('#vListG').addEventListener('click',vClick);$('#vListS').addEventListener('click',vClick);
-function openVoice(){$('#vModal').hidden=false;vMsg(VDB.ok?'':'このブラウザでは録音を保存できないため、ページを閉じると録音は消えます。');renderVoicePanel();}
-function closeVoice(){stopRec();$('#vModal').hidden=true;}
+function openVoice(){openModal($('#vModal'));vMsg(VDB.ok?'':'このブラウザでは録音を保存できないため、ページを閉じると録音は消えます。');renderVoicePanel();}
+function closeVoice(){stopRec();closeModal($('#vModal'));}
 $('#voiceBtn').onclick=openVoice;$('#vClose').onclick=closeVoice;
 $('#vModal').addEventListener('click',e=>{if(e.target.id==='vModal')closeVoice();});
 
@@ -1408,18 +1627,33 @@ function renderRoster(d){
   $('#rDen').innerHTML=d.denied.map(x=>`<div class="vrow"><div><div class="vt"><span>${esc(x.email)}</span></div><div class="vd">${fmtD(x.at)} に開こうとしました</div></div><div class="vbtns">${/@/.test(x.email)?`<button class="vb" data-add="${esc(x.email)}">名簿に追加</button>`:''}</div></div>`).join('');
 }
 let rData=null;
-function rCall(fn,arg){
-  rMsg('');
-  google.script.run.withSuccessHandler(d=>{rData=d;renderRoster(d);}).withFailureHandler(e=>rMsg(String(e&&e.message||e).replace(/^Error:\s*/,'')))[fn](arg);
+let rDomain='';
+function rCall(fn,arg,btn,okMsg){
+  rMsg('');if(btn){btn.classList.add('loading');btn.disabled=true;}
+  const done=()=>{if(btn){btn.classList.remove('loading');btn.disabled=false;rCheck();}};
+  google.script.run.withSuccessHandler(d=>{rData=d;if(d&&d.owner)rDomain=d.owner.split('@')[1];renderRoster(d);done();if(okMsg)toast(okMsg);})
+    .withFailureHandler(e=>{rMsg(String(e&&e.message||e).replace(/^Error:\s*/,''));done();})[fn](arg);
 }
-$('#rosterBtn').onclick=()=>{$('#rModal').hidden=false;rArm=null;rCall('rosterList');setTimeout(()=>$('#rEmail').focus(),50);};
-$('#rClose').onclick=()=>{$('#rModal').hidden=true;};
-$('#rModal').addEventListener('click',e=>{if(e.target.id==='rModal')$('#rModal').hidden=true;});
-$('#rForm').addEventListener('submit',e=>{e.preventDefault();const v=$('#rEmail').value.trim();if(!v)return;$('#rEmail').value='';rCall('rosterAdd',v);});
+function rCheck(){
+  const v=$('#rEmail').value.trim().toLowerCase(),h=$('#rHint'),btn=$('#rForm button');
+  let ok=false,msg='';
+  if(!v)msg='';
+  else if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v))msg='メールアドレスの形になっていません（例：tanaka@'+(rDomain||'sakado.ed.jp')+'）';
+  else if(rDomain&&v.split('@')[1]!==rDomain)msg='学校のアカウント（@'+rDomain+'）だけ追加できます';
+  else if(rData&&(rData.owner===v||rData.roster.some(x=>x.email===v)))msg='この人はもう名簿に入っています';
+  else{ok=true;msg='✓ 追加できます';}
+  h.textContent=msg;h.className='rhint'+(msg?(ok?' ok':' ng'):'');
+  $('#rEmail').classList.toggle('bad',!!v&&!ok);btn.disabled=!ok;
+}
+$('#rEmail').addEventListener('input',rCheck);
+$('#rosterBtn').onclick=()=>{openModal($('#rModal'));rArm=null;rCall('rosterList');rCheck();setTimeout(()=>$('#rEmail').focus(),80);};
+$('#rClose').onclick=()=>closeModal($('#rModal'));
+$('#rModal').addEventListener('click',e=>{if(e.target.id==='rModal')closeModal($('#rModal'));});
+$('#rForm').addEventListener('submit',e=>{e.preventDefault();rCheck();const btn=$('#rForm button');if(btn.disabled)return;const v=$('#rEmail').value.trim();$('#rEmail').value='';rCall('rosterAdd',v,btn,v+' を名簿に追加しました');});
 $('#rList').addEventListener('click',e=>{const b=e.target.closest('[data-rm]');if(!b)return;const em=b.dataset.rm;
   if(rArm!==em){rArm=em;renderRoster(rData);clearTimeout(rArm._t);setTimeout(()=>{if(rArm===em){rArm=null;renderRoster(rData);}},3000);return;}
-  rArm=null;rCall('rosterRemove',em);});
-$('#rDen').addEventListener('click',e=>{const b=e.target.closest('[data-add]');if(b)rCall('rosterAdd',b.dataset.add);});
+  rArm=null;rCall('rosterRemove',em,b,em+' を名簿から外しました');});
+$('#rDen').addEventListener('click',e=>{const b=e.target.closest('[data-add]');if(b)rCall('rosterAdd',b.dataset.add,b,b.dataset.add+' を名簿に追加しました');});
 
 /* ---------- mini window (Document Picture-in-Picture, or compact page) ---------- */
 const ICON_SKIP='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 5.5v13l9-6.5z"/><rect x="16" y="5.5" width="3" height="13" rx="1"/></svg>';
@@ -1556,7 +1790,7 @@ document.addEventListener('keydown',e=>{
   else if((e.key==='l'||e.key==='L')&&tab==='sw'){$('#sLap').click();}
   else if(e.key==='m'||e.key==='M'){openMini();}
   else if(e.key==='Escape'&&!$('#vModal').hidden)closeVoice();
-  else if(e.key==='Escape'&&!$('#rModal').hidden)$('#rModal').hidden=true;
+  else if(e.key==='Escape'&&!$('#rModal').hidden)closeModal($('#rModal'));
   else if(e.key==='Escape'&&MINI&&MINI.kind==='inline')closeMini();
   else if(e.key==='Escape'&&app.classList.contains('stage'))setStage(false);
 });
@@ -1574,6 +1808,7 @@ structT();
 let t0='timer';try{t0=localStorage.getItem(KEY+'-tab')||'timer'}catch(e){}
 showTab(['timer','sw','al'].includes(t0)?t0:'timer');
 requestAnimationFrame(frame);
+requestAnimationFrame(syncInds);
 })();
 </script>
 
